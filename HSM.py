@@ -39,6 +39,7 @@ class HSM(TheanoVisionModel):
             xx = theano.shared(numpy.repeat([numpy.arange(0,self.size,1)],self.size,axis=0).T.flatten())
             yy = theano.shared(numpy.repeat([numpy.arange(0,self.size,1)],self.size,axis=0).flatten())
 
+            import ipdb;ipdb.set_trace()
             # Initialize your DoG
             lgn_kernel = lambda i,x,y,sc,ss,rc,rs: T.dot(
                 self.X,rc[i]*(T.exp(-((xx - x[i])**2 + (yy - y[i])**2)/2/sc[i]).T/ (2*sc[i]*numpy.pi))\
