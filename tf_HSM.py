@@ -88,9 +88,9 @@ class tf_HSM():
       surround = tf.exp(-pos/2/(sc + ss)) / (2*(sc + ss)*numpy.pi)
       return tf.matmul(self.images, (rc*(center)) - (rs*(surround)), transpose=True)
 
-    def LGN(self, idx, x_pos, y_pos, lgn_sc, lgn_ss, lgn_rc, lgn_rs):
+    def LGN(self, i, x_pos, y_pos, lgn_sc, lgn_ss, lgn_rc, lgn_rs):
       #import pdb; pdb.set_trace()
-      i = tf.to_int32(idx)
+      #i = tf.to_int32(idx)
       output = self.DoG(
           x=x_pos[i],
           y=y_pos[i],
@@ -98,12 +98,12 @@ class tf_HSM():
           ss=lgn_ss[i],
           rc=lgn_rc[i],
           rs=lgn_rs[i])
-      idx+=1 
-      return idx, output
+      i+=1 
+      return i, output
 
 
     def cond(self, i, x, y, sc, ss, rc, rs):
-      return tf.to_int32(i) < self.num_lgn[0]  
+      return i < self.num_lgn[0]  
 
     def build(self, x, y):
       self.images=x
