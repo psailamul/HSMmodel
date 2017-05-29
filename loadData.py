@@ -6,7 +6,9 @@ from HSM import HSM
 from visualization import *
 
 
-download_time = time.time()
+	
+
+download_time = time.time() #print "Download complete: Time %s" %(time.time() - download_time)
 train_input1=np.load('/home/pachaya/AntolikData/SourceCode/Data/region1/training_inputs.npy')
 train_set1=np.load('/home/pachaya/AntolikData/SourceCode/Data/region1/training_set.npy')
 
@@ -55,7 +57,7 @@ pred_response3 = HSM.response(hsm3,vldinput_set3,Ks3)
 # HAve to find the best neuron first
 import visualization
 
-# computeCorr(pred_act,responses):
+
 
 corr1 = computeCorr(response1, train_set1)
 corr2 = computeCorr(response2, train_set2)
@@ -75,14 +77,21 @@ vld_corr3 = computeCorr(pred_response3,vld_set3)
 imax = np.argmax(vld_corr1) # note : actually have to combine neurons in all regions
 
 plt.plot(vld_set1[:,imax],'-ok')
-plt.plot(pred_response1[:,imax],'--ow')
+plt.plot(pred_response1[:,imax],'--or')
+plt.title('Cell#%d has max corr of %f'%(imax+1,np.max(vld_corr1)))
+plt.show()
+
+imin = np.argmin(vld_corr1) # note : actually have to combine neurons in all regions
+
+plt.plot(vld_set1[:,imin],'-ok')
+plt.plot(pred_response1[:,imin],'--or')
+plt.title('Cell#%d has min corr of %f'%(imin+1,np.min(vld_corr1)))
 plt.show()
 
 """
 import matplotlib.image as mpimg
 
-img = np.reshape(train_input1[0], [31,31])
-plt.imshow(img)
+
 
 
 

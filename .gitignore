@@ -1,23 +1,12 @@
 # testing files #
 ################
+*.npy
 *.pyc
 *.py~
-*.txt~
-rasterPlot.pyc
-rasterPlot.txt
-rasterPlot.txt~
-stinkbug.png
-test.png
-matplotlibTutorial.py
-testCode2.py
-testCode3.py
-playground.py
-playground_2TensorFlow.py
-rasterPlot.py
-TensorFlowVisionModel.py
-Theano2Tensorflow_TF.py
-Theano2Tensorflow_Theano.py
-
+*.txt
+Allen_data_170513/
+Figures/
+code_rxiv/
 # Compiled source #
 ###################
 *.com

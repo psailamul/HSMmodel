@@ -1,9 +1,9 @@
 from HSM import HSM
 import numpy
 from scipy.optimize import fmin_tnc
+import param
 
-
-def fitHSM(training_inputs,training_set,seed=13):
+def fitHSM(training_inputs,training_set,seed=13,lgn=9,hlsr=0.2):
     """
     This function performs fitting of the HSM model using the fmin_tnc numpy method.
 
@@ -11,15 +11,15 @@ def fitHSM(training_inputs,training_set,seed=13):
     training_set    : 2D ndarray of neural responses to corresponding inputs of shape (num of training presentations,number of recorded neurons)
     """
     num_pres,num_neurons = numpy.shape(training_set)
-
+    #import ipdb; ipdb.set_trace()
     print "Creating HSM model"
-    import ipdb;ipdb.set_trace()
     hsm = HSM(training_inputs,training_set)
-    print "Created HSM model"
-
+    print "Created HSM model"   
+    hsm.num_lgn = lgn 
+    hsm.hlsr = hlsr
     # create the theano loss function
     func = hsm.func()
-
+    #import ipdb; ipdb.set_trace()
     # set initial random values of the model parameter vector
     Ks = hsm.create_random_parametrization(seed)
 
@@ -28,6 +28,4 @@ def fitHSM(training_inputs,training_set,seed=13):
 
     return [Ks,hsm]
 
-
-
-
+    

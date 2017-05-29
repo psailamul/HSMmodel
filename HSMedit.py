@@ -10,7 +10,7 @@ from theano import tensor as T
 from TheanoVisionModel import TheanoVisionModel
 
 class HSM(TheanoVisionModel):
-	  
+
       num_lgn = param.Integer(default=9,bounds=(0,10000),doc="""Number of lgn units""")
       hlsr = param.Number(default=0.2,bounds=(0,1.0),doc="""The hidden layer size ratio""")
       v1of = param.String(default='LogisticLoss',doc="""Transfer function of 'V1' neurons""")
@@ -42,11 +42,46 @@ class HSM(TheanoVisionModel):
             xx = theano.shared(numpy.repeat([numpy.arange(0,self.size,1)],self.size,axis=0).T.flatten()) # similar to mesh grid  31x31 matrix, 0-30 in each row
             yy = theano.shared(numpy.repeat([numpy.arange(0,self.size,1)],self.size,axis=0).flatten()) # similar to mesh grid  31x31 matrix, 0-30 in each row
 			# numpy.repeat([np.arange(0,hsm.size,1)],hsm.size,axis=0)
-            
+            import ipdb;ipdb.set_trace()
             # Initialize your DoG
             lgn_kernel = lambda i,x,y,sc,ss,rc,rs: T.dot(
                 self.X,rc[i]*(T.exp(-((xx - x[i])**2 + (yy - y[i])**2)/2/sc[i]).T/ (2*sc[i]*numpy.pi))\
                 - rs[i]*(T.exp(-((xx - x[i])**2 + (yy - y[i])**2)/2/(sc[i]+ss[i])).T/ (2*(sc[i]+ss[i])*numpy.pi))) # X = input image 
+				
+				"""
+				xx,yy = np.meshgrid(np.arange(31),np.arange(31))
+				xx = np.reshape(xx,[961]); xx = yy.reshape(yy,[961]);
+				
+				#Below
+				lgn_kernel = lambda i,x,y,sc,ss,rc,rs: np.dot(X, ((rc[i]*(np.exp(-((xx- x[i])**2 + (yy - y[i])**2)/2/sc[i]).T/(2*sc[i]*np.pi))) - rs[i]*(np.exp(-((xx - x[i])**2 + (yy - y[i])**2)/2 /(sc[i]+ss[i])).T/(2*(sc[i]+ss[i])*np.pi)))))
+				
+				 np.dot(X, ((rc[i]*(np.exp(-((xx- x[i])**2 + (yy - y[i])**2)/2/sc[i]).T/(2*sc[i]*np.pi))) - rs[i]*(np.exp(-((xx - x[i])**2 + (yy - y[i])**2)/2 /(sc[i]+ss[i])).T/(2*(sc[i]+ss[i])*np.pi)))))
+				
+				
+				np.dot(X, ((rc[i]*(np.exp(-((xx- x[i])**2 + (yy - y[i])**2)/2/sc[i]).T/(2*sc[i]*np.pi))) - rs[i]*(np.exp(-((xx - x[i])**2 + (yy - y[i])**2)/2 /(sc[i]+ss[i])).T/(2*(sc[i]+ss[i])*np.pi)))))
+				
+				x=Ks1[0:9];
+				i=1; y=Ks1[9*i:9*(i+1)]; 
+				i=2; sc=Ks1[9*i:9*(i+1)]; i=3; ss=Ks1[9*i:9*(i+1)]; i=4; rc=Ks1[9*i:9*(i+1)]; i=5; rs=Ks1[9*i:9*(i+1)];
+				lgn_ker_out = np.ndarray([9,961],dtype=float)
+
+				ii = arange(9)
+for i in np.arange(9):
+	lgn_ker_out[i] = lgn_kernel(i,x,y,sc,ss,rc,rs)
+	
+	
+					
+			tf.while_loop(
+    cond,
+    body,
+    loop_vars,
+    shape_invariants=None,
+    parallel_iterations=10,
+    back_prop=True,
+    swap_memory=False,
+    name=None
+)
+			"""
             # Apply the DoG to the Data
             lgn_output, updates = theano.scan(  # tf.while_loop()
                 lgn_kernel,
