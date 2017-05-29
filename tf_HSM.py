@@ -102,21 +102,23 @@ class tf_HSM():
 
 
     def cond(self, i, x, y, sc, ss, rc, rs):
-      return i < self.num_lgn # check again  
+      return i < self.num_lgn[0]  
 
     def build(self, x, y):
       self.images=x
       self.neural_response=y
       assert self.images is not None
       assert self.neural_response is not None
-      import pdb; pdb.set_trace()
+      #import pdb; pdb.set_trace()
       i = tf.constant(0)
-      LGN_vars = [i, x, y, self.lgn_sc, self.lgn_ss, self.lgn_rc, self.lgn_rs]
+      LGN_vars = [self,i, x, y, self.lgn_sc, self.lgn_ss, self.lgn_rc, self.lgn_rs]
       self.lgn_out = tf.while_loop(body=self.LGN, cond=self.cond, loop_vars=LGN_vars, back_prop=False)
 
       # Run MLP
-      self.l1 = self.activation((lgn_out * self.hidden_w) - self.hl_tresh)
-      self.output = self.activation((l1 * self.output_w) - self.ol_tresh)
+      #self.l1 = self.activation((lgn_out * self.hidden_w) - self.hl_tresh)
+      #self.output = self.activation((l1 * self.output_w) - self.ol_tresh)
+      self.l1 = self.activation(lgn_out * self.hidden_w, self.hl_tresh)
+      self.output = self.activation(l1 * self.output_w, self.ol_tresh)
       #create loss
       loss = tf.nn.log_poisson_loss(self.output, self.neural_response, compute_full_loss=False)
 
