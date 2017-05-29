@@ -75,7 +75,6 @@ class tf_HSM():
     
     def DoG(self, x, y, sc, ss, rc, rs):
       # Passing the ith element of each variable
-
       img_vec_size=int(self.X.get_shape()[1])
       img_size = int(np.sqrt(img_vec_size ))
       num_LGN= sc.shape()[0]
@@ -89,20 +88,22 @@ class tf_HSM():
       surround = tf.exp(-pos/2/(sc + ss)) / (2*(sc + ss)*numpy.pi)
       return tf.matmul(self.images, (rc*(center)) - (rs*(surround)), transpose=True)
 
-    def LGN(self, i, x, y, sc, ss, rc, rs):
-      output = DoG(
-          x=x[i],
-          y=y[i],
-          sc=sc[i],
-          ss=ss[i],
-          rc=rc[i],
-          rs=rs[i])
-      i+=1 
-      return i, output
+    def LGN(self, idx, x_pos, y_pos, lgn_sc, lgn_ss, lgn_rc, lgn_rs):
+      #import pdb; pdb.set_trace()
+      i = tf.to_int32(idx)
+      output = self.DoG(
+          x=x_pos[i],
+          y=y_pos[i],
+          sc=lgn_sc[i],
+          ss=lgn_ss[i],
+          rc=lgn_rc[i],
+          rs=lgn_rs[i])
+      idx+=1 
+      return idx, output
 
 
     def cond(self, i, x, y, sc, ss, rc, rs):
-      return i < self.num_lgn[0]  
+      return tf.to_int32(i) < self.num_lgn[0]  
 
     def build(self, x, y):
       self.images=x
@@ -111,7 +112,7 @@ class tf_HSM():
       assert self.neural_response is not None
       #import pdb; pdb.set_trace()
       i = tf.constant(0)
-      LGN_vars = [self,i, x, y, self.lgn_sc, self.lgn_ss, self.lgn_rc, self.lgn_rs]
+      LGN_vars = [i, x, y, self.lgn_sc, self.lgn_ss, self.lgn_rc, self.lgn_rs]
       self.lgn_out = tf.while_loop(body=self.LGN, cond=self.cond, loop_vars=LGN_vars, back_prop=False)
 
       # Run MLP
@@ -123,3 +124,17 @@ class tf_HSM():
       loss = tf.nn.log_poisson_loss(self.output, self.neural_response, compute_full_loss=False)
 
       return self.output, loss
+
+      
+          # def LGN(self, i, x, y, sc, ss, rc, rs):
+      # import pdb; pdb.set_trace()
+      # idx = tf.to_int32(i)
+      # output = self.DoG(
+          # x=x[i],
+          # y=y[i],
+          # sc=sc[i],
+          # ss=ss[i],
+          # rc=rc[i],
+          # rs=rs[i])
+      # i+=1 
+      # return i, output
