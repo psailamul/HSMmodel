@@ -135,4 +135,4 @@ class tf_HSM():
       self.l1 = self.activation(tf.matmul(self.lgn_out, self.hidden_w), self.hl_tresh) #RELU that shict
       self.output = self.activation(tf.matmul(self.l1, self.output_w), self.ol_tresh)
 
-      return self.output
+      return self.output, self.lgn_out
