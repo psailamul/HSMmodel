@@ -78,9 +78,10 @@ iterations = 100
 
 with tf.device('/gpu:0'):
   with tf.variable_scope('hsm') as scope:
+    import ipdb; ipdb.set_trace()
     # Declare and build model
     hsm = tf_HSM()
-    pred_neural_response,lgn_out = hsm.build(images, neural_response)
+    pred_neural_response,l1, lgn_out,LGN_params = hsm.build(images, neural_response)
 
     # Define loss
     loss = tf.contrib.losses.log_loss(
@@ -117,14 +118,16 @@ loss_list = []
 MSE_list = []
 corr_list = []
 for idx in range(iterations):
-  _, loss_value, score_value, yhat, lgn_response = sess.run(
-    [train_op, loss, score, pred_neural_response, lgn_out],
-    feed_dict={images: train_input, neural_response: train_set})
+  import ipdb; ipdb.set_trace()
+  _, loss_value, score_value, yhat, l1_response, lgn_response,LGN_PRMS = sess.run(
+    [train_op, loss, score, pred_neural_response, l1, lgn_out, LGN_params],
+    feed_dict={images: train_input[0:100,:], neural_response: train_set[0:100,:]})
   it_corr = correlate_vectors(yhat, train_set).mean()
   corr_list += [it_corr]
   loss_list += [loss_value]
   MSE_list += [score_value]
   saver.save(sess, 'save_trained_HSM')
+  
   print 'Iteration: %s | Loss: %.5f | MSE: %.5f | Corr: %.5f' % (
     idx,
     loss_value,
@@ -151,11 +154,11 @@ plt.xlabel('iterations')
 
 plt.show()
 
-import ipdb; ipdb.set_trace()
+
 # load trained model 
 #with tf.Session() as sess:    
-if (0):
-    import ipdb; ipdb.set_trace()
+if (False):
+    
     from visualization import *
     #Visualization
     corr = computeCorr(yhat, train_set)

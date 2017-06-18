@@ -6,7 +6,6 @@ import matplotlib.image as mpimg
 import time
 from HSM import HSM
 from visualization import *
-import my_callbacks
 
 import time
 

@@ -30,7 +30,7 @@ class tf_HSM():
 
     def __init__(self, **params): #def __init__(**params):
         self.num_lgn=[9]
-        self.hlsr = [0.2]
+        self.hlsr = [0.2] 
         self.LGN_init = tf.constant_initializer(0) ############ Note the bound issue   
         self.LGN_sc_init = tf.constant_initializer(0.1)
         self.MLP_init = None
@@ -79,6 +79,8 @@ class tf_HSM():
     
     def DoG(self, x, y, sc, ss, rc, rs):
       # Passing the parameters for a LGN neuron
+      import ipdb; ipdb.set_trace()
+      #x=14.62563043; y=19.43198948; sc=0.1; ss=1.85884457; rc= 0.45414222; rs=9.79140981;
       pos = ((self.grid_xx - x)**2 + (self.grid_yy - y)**2)
       center = tf.exp(-pos/2/sc) / (2*(sc)*np.pi)
       surround = tf.exp(-pos/2/(sc + ss)) / (2*(sc + ss)*np.pi)
@@ -98,6 +100,7 @@ class tf_HSM():
 
     def LGN_loop(self,x_pos, y_pos, lgn_sc, lgn_ss, lgn_rc, lgn_rs):
         output = []
+        
         for i in np.arange(self.num_lgn[0]):
           output += [self.DoG(
               x=x_pos[i],
@@ -112,7 +115,7 @@ class tf_HSM():
       return i < self.num_lgn[0]  
 
     def build(self, data, label):
-
+      import ipdb; ipdb.set_trace()
       self.img_vec_size = int(data.get_shape()[-1])
       self.img_size = np.sqrt(self.img_vec_size)
       self.num_neurons = [int(label.get_shape()[-1])]
@@ -127,12 +130,15 @@ class tf_HSM():
       self.neural_response = label
       assert self.images is not None
       assert self.neural_response is not None
-
+      
       # DoG
       self.lgn_out = self.LGN_loop(x_pos=self.lgn_x, y_pos=self.lgn_y, lgn_sc=self.lgn_sc, lgn_ss=self.lgn_ss, lgn_rc=self.lgn_rc, lgn_rs=self.lgn_rs)
       
       # Run MLP
       self.l1 = self.activation(tf.matmul(self.lgn_out, self.hidden_w), self.hl_tresh) #RELU that shict
       self.output = self.activation(tf.matmul(self.l1, self.output_w), self.ol_tresh)
-
-      return self.output, self.lgn_out
+      
+      self.LGN_params={'x_pos':self.lgn_x, 'y_pos':self.lgn_y, 'lgn_sc':self.lgn_sc, 'lgn_ss':self.lgn_ss, 'lgn_rc':self.lgn_rc, 'lgn_rs':self.lgn_rs}
+      
+      
+      return self.output, self.l1, self.lgn_out, self.LGN_params

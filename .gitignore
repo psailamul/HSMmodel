@@ -5,6 +5,7 @@
 *.py~
 *.txt
 Allen_data_170513/
+Allen_Keras_output/
 Figures/
 code_rxiv/
 TFtrainingSummary/
