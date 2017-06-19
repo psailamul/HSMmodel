@@ -62,7 +62,7 @@ class HSM(TheanoVisionModel):
             model_output = self.construct_of(output-self.hl_tresh,self.v1of)
 
             # L2
-            model_output = self.construct_of(T.dot(model_output , self.output_w) - self.ol_tresh,self.v1of)
+            model_output = self.construct_of(T.dot(model_output , self.output_w) - self.ol_tresh,self.v1of) #implement threshold outside function
 
             self.model_output = model_output
 

@@ -68,8 +68,8 @@ train_set=np.load('/home/pachaya/AntolikData/SourceCode/Data/region' + region_nu
 # Create tensorflow vars
 images = tf.placeholder(dtype=tf.float32, shape=[None, train_input.shape[-1]], name='images')
 neural_response = tf.placeholder(dtype=tf.float32, shape=[None, train_set.shape[-1]], name='neural_response') # , shape=)
-lr = 1e-3
-iterations = 100
+lr = 1e-4
+iterations = 1000
 
 
 #load trained parameters for DoG
@@ -78,15 +78,20 @@ iterations = 100
 
 with tf.device('/gpu:0'):
   with tf.variable_scope('hsm') as scope:
-    import ipdb; ipdb.set_trace()
     # Declare and build model
     hsm = tf_HSM()
-    pred_neural_response,l1, lgn_out,LGN_params = hsm.build(images, neural_response)
+    pred_neural_response,l1, lgn_out = hsm.build(images, neural_response)
 
     # Define loss
     loss = tf.contrib.losses.log_loss(
       predictions=pred_neural_response,
       targets=neural_response)    
+                """
+            if self.error_function == 'LogLikelyhood':
+               self.model = T.sum(model_output) - T.sum(self.Y * T.log(model_output+0.0000000000000000001))
+            elif self.error_function == 'MSE':
+               self.model = T.sum(T.sqr(model_output - self.Y))
+               """
 
     # Optimize loss
     train_op = tf.train.AdamOptimizer(lr).minimize(loss)
@@ -114,18 +119,19 @@ summary_dir = os.path.join(  "TFtrainingSummary/"  'AntolikRegion'+region_num+'_
 summary_writer = tf.train.SummaryWriter(summary_dir, sess.graph)
 
 
-loss_list = []
-MSE_list = []
-corr_list = []
+loss_list, activation_summary_lgn, activation_summary_l1, yhat_std, MSE_list, corr_list = [], [], [], [], [],[]
 for idx in range(iterations):
-  import ipdb; ipdb.set_trace()
-  _, loss_value, score_value, yhat, l1_response, lgn_response,LGN_PRMS = sess.run(
-    [train_op, loss, score, pred_neural_response, l1, lgn_out, LGN_params],
-    feed_dict={images: train_input[0:100,:], neural_response: train_set[0:100,:]})
-  it_corr = correlate_vectors(yhat, train_set).mean()
+  #import ipdb; ipdb.set_trace()
+  _, loss_value, score_value, yhat, l1_response, lgn_response = sess.run(
+    [train_op, loss, score, pred_neural_response, l1, lgn_out],
+    feed_dict={images: train_input, neural_response: train_set})
+  it_corr = correlate_vectors(yhat, train_set).mean() #####################
   corr_list += [it_corr]
   loss_list += [loss_value]
   MSE_list += [score_value]
+  activation_summary_lgn += [np.mean(lgn_response)]
+  activation_summary_l1 += [np.mean(l1_response)]
+  yhat_std += [np.std(yhat)]
   saver.save(sess, 'save_trained_HSM')
   
   print 'Iteration: %s | Loss: %.5f | MSE: %.5f | Corr: %.5f' % (
@@ -137,32 +143,63 @@ for idx in range(iterations):
 # Analyze the results
 #Visualization
 itr_idx = range(iterations)
-plt.subplot(1, 3, 1)
+plt.subplot(2, 3, 1)
 plt.plot(itr_idx, loss_list, 'k-')
 plt.title('Loss')
 plt.xlabel('iterations')
 
-plt.subplot(1, 3, 2)
+plt.subplot(2, 3, 2)
 plt.plot(itr_idx, MSE_list, 'b-')
 plt.title('MSE')
 plt.xlabel('iterations')
 
-plt.subplot(1, 3, 3)
+plt.subplot(2, 3, 3)
 plt.plot(itr_idx, corr_list, 'r-')
 plt.title('Mean Correlation')
 plt.xlabel('iterations')
 
+plt.subplot(2, 3, 4)
+plt.plot(itr_idx, activation_summary_lgn, 'r-')
+plt.title('Mean LGN activation')
+plt.xlabel('iterations')
+
+plt.subplot(2, 3, 5)
+plt.plot(itr_idx, activation_summary_l1, 'r-')
+plt.title('Mean L1 activation')
+plt.xlabel('iterations')
+
+plt.subplot(2,3, 6)
+plt.plot(itr_idx, yhat_std, 'r-')
+plt.title('std of predicted response')
+plt.xlabel('iterations')
+
 plt.show()
 
-
+from scipy.stats import pearsonr
+import ipdb; ipdb.set_trace()
 # load trained model 
 #with tf.Session() as sess:    
-if (False):
+if (True):
     
     from visualization import *
     #Visualization
-    corr = computeCorr(yhat, train_set)
+    #corr = computeCorr(yhat, train_set)
+    pred_act = yhat; responses = train_set
+    num_pres,num_neurons = np.shape(responses)
+    corr=np.zeros(num_neurons)
+    
+    for i in xrange(0,num_neurons):
+        if np.all(pred_act[:,i]==0) & np.all(responses[:,i]==0):
+            corr[i]=1.
+        elif not(np.all(pred_act[:,i]==0) | np.all(responses[:,i]==0)):
+            # /!\ To prevent errors due to very low values during computation of correlation
+            if abs(pred_act[:,i]).max()<1:
+                pred_act[:,i]=pred_act[:,i]/abs(pred_act[:,i]).max()
+            if abs(responses[:,i]).max()<1:
+                responses[:,i]=responses[:,i]/abs(responses[:,i]).max()    
+            corr[i]=pearsonr(np.array(responses)[:,i].flatten(),np.array(pred_act)[:,i].flatten())[0]
 
+    corr[np.isnan(corr)] =0
     # Max corr neurons
     imax = np.argmax(corr) # note : actually have to combine neurons in all regions
 
@@ -177,8 +214,7 @@ if (False):
     plt.plot(yhat[:,imin],'--or')
     plt.title('Cell#%d has min corr of %f'%(imin+1,np.min(corr)))
     plt.show()
-saver = tf.train.import_meta_graph('save_trained_HSM.meta')
-saver.restore(sess,tf.train.latest_checkpoint('./'))
+#saver = tf.train.import_meta_graph('save_trained_HSM.meta')
+#saver.restore(sess,tf.train.latest_checkpoint('./'))
 
-    #print(sess.run('))
 print('load trained model')
