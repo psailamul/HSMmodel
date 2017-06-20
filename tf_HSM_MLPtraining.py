@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import param
-from tf_HSM import tf_HSM
+from tf_HSM_MLPonly import tf_HSM
 import os
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -22,6 +22,39 @@ def correlate_vectors(yhat_array, y_array):
     corrs += [tc]
   return corrs
 
+def get_trained_Ks(Ks, num_LGN=9):
+  #Note : add num_lgn and hlsr later  DEFAULT num_LGN = 9 , hlsr = 0.2 --> layers 
+  # x,y = center coordinate
+  n = num_LGN
+  x=Ks[0:n]; 
+  i=1; y=Ks[n*i:n*(i+1)]; 
+  i=2; sc=Ks[n*i:n*(i+1)]; i=3; ss=Ks[n*i:n*(i+1)]; i=4; rc=Ks[n*i:n*(i+1)]; i=5; rs=Ks[n*i:n*(i+1)];
+  x=np.transpose(x); y=np.transpose(y); 
+  sc=np.transpose(sc); ss=np.transpose(ss);
+  rc=np.transpose(rc); rs=np.transpose(rs);
+
+  return x,y,sc,ss,rc,rs
+
+
+def get_LGN_out(X,x,y,sc,ss,rc,rs):
+  # X = input image 
+  img_vec_size=int(np.shape(X)[0])
+  img_size = int(np.sqrt(img_vec_size ))
+  num_LGN= np.shape(sc)[0]
+  
+  xx,yy = np.meshgrid(np.arange(img_size),np.arange(img_size))
+  xx = np.reshape(xx,[img_vec_size]); yy = np.reshape(yy,[img_vec_size]);
+  
+  #Below
+  lgn_kernel = lambda i,x,y,sc,ss,rc,rs: np.dot(X, ((rc[i]*(np.exp(-((xx- x[i])**2 + (yy - y[i])**2)/2/sc[i]).T/(2*sc[i]*np.pi))) - rs[i]*(np.exp(-((xx - x[i])**2 + (yy - y[i])**2)/2 /(sc[i]+ss[i])).T/(2*(sc[i]+ss[i])*np.pi))))
+  
+  lgn_ker_out = np.ndarray([num_LGN],dtype=float)
+  
+  for i in np.arange(num_LGN):
+    lgn_ker_out[i] = lgn_kernel(i,x,y,sc,ss,rc,rs)
+
+  return lgn_ker_out
+
 def log_likelihood(predictions,targets,epsilon =0.0000000000000000001):
   return tf.reduce_sum(predictions) - tf.reduce_sum(tf.mul(targets,tf.log(predictions + epsilon)))
 """
@@ -39,35 +72,49 @@ dt_stamp = re.split(
         replace(' ', '_').replace(':', '_').replace('-', '_')
         
 region_num = '1'
-runcodestr ="Initialize with uniform"
+runcodestr ="train MLP only "
 
-########################################################################
+
 
 # Download data from a region
 train_input=np.load('/home/pachaya/AntolikData/SourceCode/Data/region' + region_num+'/training_inputs.npy')
 train_set=np.load('/home/pachaya/AntolikData/SourceCode/Data/region' + region_num+'/training_set.npy')
 
-#load trained LGN hyperparameters
-#num_LGN = NUM_LGN; hlsr = HLSR;
-#[trained_Ks,trained_hsm] = np.load('out_region'+region_num+'.npy')
-
-
+#Hyperparameters
+NUM_LGN=9; HLSR =0.2
+#load trained parameters for DoG
+num_LGN = NUM_LGN; hlsr = HLSR;
+[trained_Ks,trained_hsm] = np.load('out_region'+region_num+'.npy')
+x,y,sc,ss,rc,rs = get_trained_Ks(trained_Ks,num_LGN)
+#import ipdb; ipdb.set_trace()
 # Create tensorflow vars
 images = tf.placeholder(dtype=tf.float32, shape=[None, train_input.shape[-1]], name='images')
-neural_response = tf.placeholder(dtype=tf.float32, shape=[None, train_set.shape[-1]], name='neural_response') # , shape=)
+neural_response = tf.placeholder(dtype=tf.float32, shape=[None, train_set.shape[-1]], name='neural_response') 
+trained_x = tf.placeholder(dtype=tf.float32, shape=[num_LGN], name='x_position') 
+trained_y = tf.placeholder(dtype=tf.float32, shape=[num_LGN], name='y_position') 
+trained_sc = tf.placeholder(dtype=tf.float32, shape=[num_LGN], name='size_center') 
+trained_ss = tf.placeholder(dtype=tf.float32, shape=[num_LGN], name='size_surround') 
+trained_rc = tf.placeholder(dtype=tf.float32, shape=[num_LGN], name='center_weight') 
+trained_rs = tf.placeholder(dtype=tf.float32, shape=[num_LGN], name='surround_weight') 
+
+
 lr = 1e-3
-iterations = 10000
+iterations = 2500
 
 
-#load trained parameters for DoG
-#x,y,sc,ss,rc,rs = get_trained_Ks(Ks,9)
-#import pdb; pdb.set_trace()
 
-with tf.device('/gpu:1'):
+
+########################################################################
+
+
+with tf.device('/gpu:2'):
   with tf.variable_scope('hsm') as scope:
     # Declare and build model
     hsm = tf_HSM()
-    pred_neural_response,l1, lgn_out = hsm.build(images, neural_response)
+    pred_neural_response,l1, lgn_out = hsm.build(images, neural_response,
+      x=trained_x, y=trained_y,
+      sc=trained_sc, ss=trained_ss,
+      rc=trained_rc, rs=trained_rs)
 
     # Define loss
     #loss = tf.contrib.losses.log_loss(
@@ -108,10 +155,13 @@ for idx in range(iterations):
   
   _, loss_value, score_value, yhat, l1_response, lgn_response = sess.run(
     [train_op, loss, score, pred_neural_response, l1, lgn_out],
-    feed_dict={images: train_input, neural_response: train_set})
-  #import ipdb; ipdb.set_trace()
+    feed_dict={images: train_input, neural_response: train_set,
+    trained_x: x, trained_y: y,
+    trained_sc: sc, trained_ss: ss,
+    trained_rc: rc, trained_rs: rs,
+    })
   #it_corr = np.mean(correlate_vectors(yhat, train_set))
-  
+ 
   corr=computeCorr(yhat, train_set)
   corr[np.isnan(corr)]=0.0
   it_corr = np.mean(corr)
@@ -198,16 +248,15 @@ def plot_act_of_max_min_corr(yhat,train_set,corr):
 if (True):
     import ipdb; ipdb.set_trace()
     from visualization import *
-    #Visualization
     
     pred_act = yhat; responses = train_set
-    hist_of_pred_and_record_response(pred_act,responses)
-
     corr = computeCorr(yhat, train_set)
-    corr[np.isnan(corr)]=0.0
+    
     plot_act_of_max_min_corr(pred_act,responses,corr)
+    hist_of_pred_and_record_response(pred_act,responses,cell_id=np.argmax(corr))
     import ipdb; ipdb.set_trace()    
 
+    
 #saver = tf.train.import_meta_graph('save_trained_HSM.meta')
 #saver.restore(sess,tf.train.latest_checkpoint('./'))
 

@@ -52,7 +52,7 @@ class HSM(TheanoVisionModel):
                 lgn_kernel,
                 sequences=T.arange(self.num_lgn),
                 non_sequences=[self.lgn_x,self.lgn_y,self.lgn_sc,self.lgn_ss,self.lgn_rc,self.lgn_rs])
-
+            
             # Apply non-linearity to DoG output
             lgn_output = lgn_output.T
             lgn_output = self.construct_of(lgn_output, 'Linear')

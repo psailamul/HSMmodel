@@ -31,27 +31,31 @@ class tf_HSM():
     def __init__(self, **params): #def __init__(**params):
         self.num_lgn=[9]
         self.hlsr = [0.2] 
-        #self.LGN_init = tf.random_uniform_initializer(0,None) 
-        #self.LGN_sc_init = tf.random_uniform_initializer(0.1/2.0,None)
-        #self.MLP_init = tf.truncated_normal_initializer(mean=0, stddev=0.01)  #unuse
-
+        self.MLP_init = tf.truncated_normal_initializer(mean=0, stddev=0.01) 
         self.activation = lambda x, y: logistic_loss(x, t=y, coef=1)
         self.images = None
         self.neural_response = None
         self.lgn_trainable = True
         self.UNIFORM_W_init = tf.random_uniform_initializer(-10/2.0,10.0/2.0)
-        self.UNIFORM_Threshold_init = tf.random_uniform_initializer(0.0,10.0/2.0)
+        self.UNIFORM_ReLuThreshold_init = tf.random_uniform_initializer(0.0,10.0/2.0)
+
+        #Load trained Ks
+        self.lgn_x = None; self.lgn_y = None; 
+        self.lgn_sc = None; self.lgn_ss = None; 
+        self.lgn_rc = None; self.lgn_rs = None; 
 
 
     def construct_free_params(self,TrainHPY_PRM = False):
 
       # LGN initialization
+      """
       self.lgn_x = tf.get_variable(name="x_pos", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable) # 0-31
       self.lgn_y = tf.get_variable(name="y_pos", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable) # 0-31
       self.lgn_sc = tf.get_variable(name="size_center", shape=self.num_lgn, initializer=self.LGN_sc_init, trainable=self.lgn_trainable)  #0.1 - 31
       self.lgn_ss = tf.get_variable(name="size_surround", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable) #0.1 - 31
       self.lgn_rc = tf.get_variable(name="center_weight", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable)  #0-10
       self.lgn_rs = tf.get_variable(name="surround_weight", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable) #0-10
+      """
 
       # MLP
       self.hidden_w = tf.get_variable(
@@ -62,7 +66,7 @@ class tf_HSM():
       self.hl_tresh = tf.get_variable(
         name="hidden_layer_threshold",
         shape=int(self.num_neurons[0]*self.hlsr[0]),  #20
-        initializer=self.UNIFORM_Threshold_init) #init_bounds # 0-10
+        initializer=self.UNIFORM_ReLuThreshold_init) #init_bounds # 0-10
 
       self.output_w = tf.get_variable(
         name="output_w",
@@ -72,7 +76,7 @@ class tf_HSM():
       self.ol_tresh = tf.get_variable(
         name="output_layer_threshold", #output_layer_threshold
         shape=int(self.num_neurons[0]), #103
-        initializer=self.UNIFORM_Threshold_init) # init_bound 0,10
+        initializer=self.UNIFORM_ReLuThreshold_init) # init_bound 0,10
       
       #Check bounds
       #checkbounds = lambda val, lower_bound, upper_bound : tf.minimum(tf.maximum(val,lower_bound), upper_bound)
@@ -126,7 +130,7 @@ class tf_HSM():
     def cond(self, i, x, y, sc, ss, rc, rs):
       return i < self.num_lgn[0]  
 
-    def build(self, data, label):
+    def build(self, data, label, x, y, sc, ss, rc, rs):
       #import ipdb; ipdb.set_trace()
       self.img_vec_size = int(data.get_shape()[-1])
       self.img_size = np.sqrt(self.img_vec_size)
@@ -145,6 +149,12 @@ class tf_HSM():
       self.neural_response = label
       assert self.images is not None
       assert self.neural_response is not None
+
+      
+      #Load trained LGN
+      self.lgn_x = x; self.lgn_y = y; 
+      self.lgn_sc = sc; self.lgn_ss = ss; 
+      self.lgn_rc = rc; self.lgn_rs = rs; 
       
       # DoG
       self.lgn_out = self.LGN_loop(
