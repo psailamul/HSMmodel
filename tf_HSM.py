@@ -32,12 +32,15 @@ class tf_HSM():
         self.num_lgn=[9]
         self.hlsr = [0.2] 
         self.LGN_init = tf.constant_initializer(0) ############ Note the bound issue   
+        #self.LGN_init=tf.truncated_normal_initializer(mean=0, stddev=0.01) 
         self.LGN_sc_init = tf.constant_initializer(0.1)
-        self.MLP_init = tf.truncated_normal_initializer(mean=0, stddev=0.01) #unuse
+        self.MLP_init = tf.truncated_normal_initializer(mean=0, stddev=0.01) 
         self.activation = lambda x, y: logistic_loss(x, t=y, coef=1)
         self.images = None
         self.neural_response = None
         self.lgn_trainable = True
+        self.UNIFORM_W_init = tf.random_uniform_initializer(-10/2.0,10.0/2.0)
+        self.UNIFORM_ReLuThreshold_init = tf.random_uniform_initializer(0.0,10.0/2.0)
 
 
     def construct_free_params(self,TrainHPY_PRM = False):
@@ -54,22 +57,27 @@ class tf_HSM():
       self.hidden_w = tf.get_variable(
         name="hidden_weights",
         shape=(self.num_lgn[0], int(self.num_neurons[0]*self.hlsr[0])), # [9,20]
-        initializer=self.MLP_init)  #init_bounds  #-10, 10
+        initializer=self.UNIFORM_W_init)  #init_bounds  #-10, 10
 
       self.hl_tresh = tf.get_variable(
         name="hidden_layer_threshold",
         shape=int(self.num_neurons[0]*self.hlsr[0]),  #20
-        initializer=self.LGN_init) #init_bounds # 0-10
+        initializer=self.UNIFORM_ReLuThreshold_init) #init_bounds # 0-10
 
       self.output_w = tf.get_variable(
         name="output_w",
         shape=(int(self.num_neurons[0]*self.hlsr[0]), int(self.num_neurons[0])), #20, 103
-        initializer=self.MLP_init) # -10, 10
+        initializer=self.UNIFORM_W_init) # init_bound -10, 10
 
       self.ol_tresh = tf.get_variable(
         name="output_layer_threshold", #output_layer_threshold
         shape=int(self.num_neurons[0]), #103
-        initializer=self.LGN_init) # 0,10
+        initializer=self.UNIFORM_ReLuThreshold_init) # init_bound 0,10
+      
+      #Check bounds
+      #checkbounds = lambda val, lower_bound, upper_bound : tf.minimum(tf.maximum(val,lower_bound), upper_bound)
+      #self.hidden_w =checkbounds(self.hidden_w,-10,10); self.hl_tresh = checkbounds(self.hl_tresh,0,10);
+      #self.output_w =checkbounds(self.output_w,-10,10); self.ol_tresh = checkbounds(self.ol_tresh,0,10);
     
     def DoG(self, x, y, sc, ss, rc, rs):
       # Passing the parameters for a LGN neuron
@@ -145,6 +153,10 @@ class tf_HSM():
         lgn_rs=self.lgn_rs)
       
       # Run MLP
+      checklowerbounds = lambda val, lower_bound : tf.maximum(val,lower_bound)
+      self.hl_tresh = checklowerbounds(self.hl_tresh,0.0)
+      self.ol_tresh= checklowerbounds(self.ol_tresh,0.0)
+
       self.l1 = self.activation(tf.matmul(self.lgn_out, self.hidden_w), self.hl_tresh) #RELU that shift
       self.output = self.activation(tf.matmul(self.l1, self.output_w), self.ol_tresh)
       

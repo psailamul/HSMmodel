@@ -4,6 +4,13 @@
 *.pyc
 *.py~
 *.txt
+# TF savers #
+###############
+save_trained_HSM
+save_trained_HSM.meta
+
+# folders #
+#################
 Allen_data_170513/
 Allen_Keras_output/
 Figures/

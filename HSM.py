@@ -33,7 +33,7 @@ class HSM(TheanoVisionModel):
             self.hidden_w = self.add_free_param("hidden_weights",(self.num_lgn,int(self.num_neurons*self.hlsr)),(None,None),init_bounds=(-10,10)) #shape = (9, int(103*0.2)) = (9, 20)   , init_bounds=(-10,10)
             self.hl_tresh = self.add_free_param("hidden_layer_threshold",int(self.num_neurons*self.hlsr),(0,None),init_bounds=(0,10))  #shape = int(103*0.2) = 20   , init_bounds=(0,10) 
             self.output_w = self.add_free_param("output_weights",(int(self.num_neurons*self.hlsr),self.num_neurons),(None,None),init_bounds=(-10,10)) #shape = (int(103*0.2),103) = (20, 103)   , init_bounds=(-10,10) 
-            self.ol_tresh = self.add_free_param("output_layer_threshold",int(self.num_neurons),(0,None),init_bounds=(0,10)) #shape = 103, init_bounds=(0,10)
+            self.ol_tresh = self.add_free_param("output_layer_threshold",int(self.num_neurons),(0,Non),init_bounds=(0,10)) #shape = 103, init_bounds=(0,10)
 
 
 
