@@ -28,13 +28,12 @@ class tf_HSM():
       pred_neural_response: prediction for neural response
     '''
 
-    def __init__(self, **params): #def __init__(**params):
-        self.num_lgn=[9]
-        self.hlsr = [0.2] 
+    def __init__(self, NUM_LGN=9,HLSR=0.2, **params): #def __init__(**params):
+        self.num_lgn=[NUM_LGN]
+        self.hlsr = [HLSR]
         #self.LGN_init = tf.random_uniform_initializer(0,None) 
         #self.LGN_sc_init = tf.random_uniform_initializer(0.1/2.0,None)
         #self.MLP_init = tf.truncated_normal_initializer(mean=0, stddev=0.01)  #unuse
-
         self.activation = lambda x, y: logistic_loss(x, t=y, coef=1)
         self.images = None
         self.neural_response = None
@@ -42,8 +41,7 @@ class tf_HSM():
         self.UNIFORM_W_init = tf.random_uniform_initializer(-10/2.0,10.0/2.0)
         self.UNIFORM_Threshold_init = tf.random_uniform_initializer(0.0,10.0/2.0)
 
-
-    def construct_free_params(self,TrainHPY_PRM = False):
+    def construct_free_params(self):
 
       # LGN initialization
       self.lgn_x = tf.get_variable(name="x_pos", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable) # 0-31
@@ -127,7 +125,7 @@ class tf_HSM():
       return i < self.num_lgn[0]  
 
     def build(self, data, label):
-      #import ipdb; ipdb.set_trace()
+      
       self.img_vec_size = int(data.get_shape()[-1])
       self.img_size = np.sqrt(self.img_vec_size)
       self.num_neurons = [int(label.get_shape()[-1])]
@@ -138,7 +136,7 @@ class tf_HSM():
 
       self.LGN_init = tf.random_uniform_initializer(0,self.img_size/2.0)
       self.LGN_sc_init = tf.random_uniform_initializer(0.1/2.0,self.img_size/2.0)
-
+      #import ipdb; ipdb.set_trace()
       self.construct_free_params()
 
       self.images = data

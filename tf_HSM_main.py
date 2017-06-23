@@ -39,33 +39,32 @@ dt_stamp = re.split(
         replace(' ', '_').replace(':', '_').replace('-', '_')
         
 region_num = '1'
-runcodestr ="Initialize with uniform"
-
+runcodestr ="Normalize neural response"
+NORM_RESPONSE = True
 ########################################################################
 
 # Download data from a region
 train_input=np.load('/home/pachaya/AntolikData/SourceCode/Data/region' + region_num+'/training_inputs.npy')
 train_set=np.load('/home/pachaya/AntolikData/SourceCode/Data/region' + region_num+'/training_set.npy')
-
-#load trained LGN hyperparameters
-#num_LGN = NUM_LGN; hlsr = HLSR;
-#[trained_Ks,trained_hsm] = np.load('out_region'+region_num+'.npy')
-
+#import ipdb; ipdb.set_trace()
+if(NORM_RESPONSE):
+	train_set = train_set/(train_set.max()-train_set.min())
 
 # Create tensorflow vars
 images = tf.placeholder(dtype=tf.float32, shape=[None, train_input.shape[-1]], name='images')
 neural_response = tf.placeholder(dtype=tf.float32, shape=[None, train_set.shape[-1]], name='neural_response') # , shape=)
 lr = 1e-3
-iterations = 10000
+iterations = 2500
 
 
 #load trained parameters for DoG
 #x,y,sc,ss,rc,rs = get_trained_Ks(Ks,9)
 #import pdb; pdb.set_trace()
 
-with tf.device('/gpu:1'):
+with tf.device('/gpu:0'):
   with tf.variable_scope('hsm') as scope:
     # Declare and build model
+
     hsm = tf_HSM()
     pred_neural_response,l1, lgn_out = hsm.build(images, neural_response)
 
@@ -109,7 +108,7 @@ for idx in range(iterations):
   _, loss_value, score_value, yhat, l1_response, lgn_response = sess.run(
     [train_op, loss, score, pred_neural_response, l1, lgn_out],
     feed_dict={images: train_input, neural_response: train_set})
-  #import ipdb; ipdb.set_trace()
+  
   #it_corr = np.mean(correlate_vectors(yhat, train_set))
   
   corr=computeCorr(yhat, train_set)
@@ -175,7 +174,7 @@ from scipy.stats import pearsonr
 #with tf.Session() as sess:    
 def hist_of_pred_and_record_response(pred_response, recorded_response, cell_id=0):
   plt.subplot(121); plt.hist(recorded_response[:,cell_id]); plt.title('Recorded Response');
-  plt.subplot(122); plt.hist(yhat[:,cell_id]); plt.title('Predicted Response');
+  plt.subplot(122); plt.hist(pred_response[:,cell_id]); plt.title('Predicted Response');
   plt.suptitle("Distribution of cell #%g's response"%cell_id)
   plt.show()
 
@@ -201,11 +200,12 @@ if (True):
     #Visualization
     
     pred_act = yhat; responses = train_set
-    hist_of_pred_and_record_response(pred_act,responses)
+    #hist_of_pred_and_record_response(pred_act,responses)
 
     corr = computeCorr(yhat, train_set)
     corr[np.isnan(corr)]=0.0
     plot_act_of_max_min_corr(pred_act,responses,corr)
+    hist_of_pred_and_record_response(pred_act,responses,cell_id=np.argmax(corr))
     import ipdb; ipdb.set_trace()    
 
 #saver = tf.train.import_meta_graph('save_trained_HSM.meta')

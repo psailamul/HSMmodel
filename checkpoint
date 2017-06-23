@@ -1,2 +1,2 @@
-model_checkpoint_path: "save_trained_HSM"
-all_model_checkpoint_paths: "save_trained_HSM"
+model_checkpoint_path: "save_trained_HSM_trial0_seed1"
+all_model_checkpoint_paths: "save_trained_HSM_trial0_seed1"
