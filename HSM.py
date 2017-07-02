@@ -18,8 +18,8 @@ class HSM(TheanoVisionModel):
 
       def construct_free_params(self):
 
-			# add_free_param(self,name,shape,bounds,init_bounds=None):
-			
+			# NOTE: def add_free_param(self,name,shape,bounds,init_bounds=None):
+			#       return a TensorVariable datatype
             # LGN
             self.lgn_x = self.add_free_param("x_pos",self.num_lgn,(0,self.size)) # shape = num_lgn = 9 , bound = (0,31)
             self.lgn_y = self.add_free_param("y_pos",self.num_lgn,(0,self.size))
@@ -33,7 +33,7 @@ class HSM(TheanoVisionModel):
             self.hidden_w = self.add_free_param("hidden_weights",(self.num_lgn,int(self.num_neurons*self.hlsr)),(None,None),init_bounds=(-10,10)) #shape = (9, int(103*0.2)) = (9, 20)   , init_bounds=(-10,10)
             self.hl_tresh = self.add_free_param("hidden_layer_threshold",int(self.num_neurons*self.hlsr),(0,None),init_bounds=(0,10))  #shape = int(103*0.2) = 20   , init_bounds=(0,10) 
             self.output_w = self.add_free_param("output_weights",(int(self.num_neurons*self.hlsr),self.num_neurons),(None,None),init_bounds=(-10,10)) #shape = (int(103*0.2),103) = (20, 103)   , init_bounds=(-10,10) 
-            self.ol_tresh = self.add_free_param("output_layer_threshold",int(self.num_neurons),(0,Non),init_bounds=(0,10)) #shape = 103, init_bounds=(0,10)
+            self.ol_tresh = self.add_free_param("output_layer_threshold",int(self.num_neurons),(0,None),init_bounds=(0,10)) #shape = 103, init_bounds=(0,10)
 
 
 
@@ -48,7 +48,7 @@ class HSM(TheanoVisionModel):
                 self.X,rc[i]*(T.exp(-((xx - x[i])**2 + (yy - y[i])**2)/2/sc[i]).T/ (2*sc[i]*numpy.pi))\
                 - rs[i]*(T.exp(-((xx - x[i])**2 + (yy - y[i])**2)/2/(sc[i]+ss[i])).T/ (2*(sc[i]+ss[i])*numpy.pi))) # X = input image 
             # Apply the DoG to the Data
-            lgn_output, updates = theano.scan(  # tf.while_loop()
+            lgn_output, updates = theano.scan(  # tf.while_loop() ######################################################################### Check here again, if it's the same as tf.while_loop()
                 lgn_kernel,
                 sequences=T.arange(self.num_lgn),
                 non_sequences=[self.lgn_x,self.lgn_y,self.lgn_sc,self.lgn_ss,self.lgn_rc,self.lgn_rs])
@@ -59,8 +59,14 @@ class HSM(TheanoVisionModel):
 
             # Combine LGN with (right now random) weights: L1
             output = T.dot(lgn_output,self.hidden_w)
-            model_output = self.construct_of(output-self.hl_tresh,self.v1of)
-
+            model_output = self.construct_of(output-self.hl_tresh,self.v1of) #output from hidden layer
+			#
+			# Me 
+			#model_hl_output = self.construct_of(output-self.hl_tresh,self.v1of)
+			 
+			#presynapses_hl_v1 = T.dot(model_hl_output , self.output_w) # input to L2 = L1 response * W_L1_to_L2
+			#model_L2_output = self.construct_of(presynapses_hl_v1-self.hl_tresh,self.v1of) 
+			 
             # L2
             model_output = self.construct_of(T.dot(model_output , self.output_w) - self.ol_tresh,self.v1of) #implement threshold outside function
 

@@ -10,6 +10,7 @@ from tensorflow.python import debug
 import time
 from visualization import *
 import sys
+ScipyOptimizerInterface = tf.contrib.opt.ScipyOptimizerInterface
 
 def correlate_vectors(yhat_array, y_array):
   corrs = []      
@@ -109,8 +110,9 @@ def main():
           targets=neural_response)
 
         # Optimize loss
-        train_op = tf.train.AdamOptimizer(lr).minimize(loss)
-        
+        #train_op = tf.train.AdamOptimizer(lr).minimize(loss)
+        #(Ks,success,c)=fmin_tnc(func ,Ks,fprime=hsm.der(),bounds=hsm.bounds,maxfun = 100000,disp=5)
+        train_op=ScipyOptimizerInterface(loss, var_list=tf.trainable_variables(), method='TNC', options={'maxiter': 100, 'bounds' :[hsm.bounds], 'disp':True}) 
         # Track correlation between YY_hat and YY    
         score = tf.nn.l2_loss(pred_neural_response - neural_response)
         
@@ -122,49 +124,52 @@ def main():
     # Set up summaries and saver
     saver = tf.train.Saver(tf.all_variables(), max_to_keep=100)
     summary_op = tf.merge_all_summaries()
-
+    import ipdb; ipdb.set_trace()
     # Initialize the graph
-    sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
-
+    #sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
     # Need to initialize both of these if supplying num_epochs to inputs
-    sess.run(tf.group(tf.initialize_all_variables(),
-     tf.initialize_local_variables()))
-    summary_dir = os.path.join("TFtrainingSummary/Region1_not_norm/AntolikRegion%s_lr%.5f_itr%g_%s"%(region_num,lr,iterations,dt_stamp))
-    summary_writer = tf.train.SummaryWriter(summary_dir, sess.graph)
 
+    with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+      sess.run(tf.group(tf.initialize_all_variables(), tf.initialize_local_variables()))
+      
+      summary_dir = os.path.join("TFtrainingSummary/ScipyOpt/AntolikRegion%s_lr%.5f_itr%g_%s"%(region_num,lr,iterations,dt_stamp))
+      summary_writer = tf.train.SummaryWriter(summary_dir, sess.graph)
 
-    loss_list, activation_summary_lgn, activation_summary_l1, yhat_std, MSE_list, corr_list = [], [], [], [], [],[]
-    
-    summary_fname = "trained_HSM_%s_trial%g_seed%g"%(GPU_ID,RESTART_TRIAL,SEED)
-    
-    for idx in range(iterations):
-      
-      _, loss_value, score_value, yhat, l1_response, lgn_response = sess.run(
-        [train_op, loss, score, pred_neural_response, l1, lgn_out],
-        feed_dict={images: train_input, neural_response: train_set})
-      #it_corr = np.mean(correlate_vectors(yhat, train_set))
-      
-      corr=computeCorr(yhat, train_set)
-      corr[np.isnan(corr)]=0.0
-      it_corr = np.mean(corr)
-      
-      corr_list += [it_corr]
-      loss_list += [loss_value]
-      MSE_list += [score_value]
-      activation_summary_lgn += [np.mean(lgn_response)]
-      activation_summary_l1 += [np.mean(l1_response)]
-      yhat_std += [np.std(yhat)]
-      saver.save(sess, '%s/%s'%(summary_dir,summary_fname))
-      if(idx==0):
-        yhat_1st = yhat
-        l1_response_1st=l1_response
-        lgn_response_1st=lgn_response
-      print 'Iteration: %s | Loss: %.5f | MSE: %.5f | Corr: %.5f |STD of yhat: %.5f' % (
-        idx,
-        loss_value,
-        score_value,
-        it_corr,
-        np.std(yhat))
+      loss_list, activation_summary_lgn, activation_summary_l1, yhat_std, MSE_list, corr_list = [], [], [], [], [],[]
+      summary_fname = "trained_HSM_%s_trial%g_seed%g"%(GPU_ID,RESTART_TRIAL,SEED)
+
+      for idx in range(iterations):
+        #_, loss_value, score_value, yhat, l1_response, lgn_response=
+        train_op.minimize(sess, 
+        feed_dict={images: train_input, neural_response: train_set},
+        fetches= [train_op, loss, score, pred_neural_response, l1, lgn_out]
+        )
+        #https://docs.scipy.org/doc/scipy-0.19.0/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize
+        #https://www.tensorflow.org/api_docs/python/tf/contrib/opt/ScipyOptimizerInterface
+        #_, loss_value, score_value, yhat, l1_response, lgn_response = sess.run(
+        #[train_op, loss, score, pred_neural_response, l1, lgn_out],
+        #feed_dict={images: train_input, neural_response: train_set})
+        
+        corr=computeCorr(yhat, train_set)
+        corr[np.isnan(corr)]=0.0
+        it_corr = np.mean(corr)
+        corr_list += [it_corr]
+        loss_list += [loss_value]
+        MSE_list += [score_value]
+        activation_summary_lgn += [np.mean(lgn_response)]
+        activation_summary_l1 += [np.mean(l1_response)]
+        yhat_std += [np.std(yhat)]
+        saver.save(sess, '%s/%s'%(summary_dir,summary_fname))
+        if(idx==0):
+          yhat_1st = yhat
+          l1_response_1st=l1_response
+          lgn_response_1st=lgn_response
+          print 'Iteration: %s | Loss: %.5f | MSE: %.5f | Corr: %.5f |STD of yhat: %.5f' % (
+            idx,
+            loss_value,
+            score_value,
+            it_corr,
+            np.std(yhat))
 
 
     print "Training complete: Time %s" %(time.time() - tt_run_time)

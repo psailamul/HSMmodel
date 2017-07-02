@@ -44,10 +44,17 @@ def plot_act_of_max_min_corr(yhat,train_set,corr):
     plt.plot(yhat[:,imin],'--or')
     plt.title('Cell#%d has min corr of %f'%(imin+1,np.min(corr)))
     plt.show()
-        
+
+#########################################################################
+# Main script
+########################################################################
+
 def main():
-    #GPU_ID=1 RESTART_TRIAL=1 SEED=1
-    GPU_ID = 0; RESTART_TRIAL=0; SEED =0;
+    #########################################################################
+    # Simulation Config
+    ########################################################################
+    
+    GPU_ID = 1; RESTART_TRIAL=0; SEED =0; ITERATIONS=100000; LR = 1e-3; NUM_LGN=9; HLSR=0.2;
     if len(sys.argv) > 1:
         for ii in range(1,len(sys.argv)):
             arg = sys.argv[ii]
@@ -57,18 +64,18 @@ def main():
     print('SEED : %g'%(SEED))
     tt_run_time = time.time()
     
-    #########################################################################
-    # Main script
-    ########################################################################
     dt_stamp = re.split(
             '\.', str(datetime.now()))[0].\
             replace(' ', '_').replace(':', '_').replace('-', '_')
             
-    region_num = '1'
-    runcodestr ="LGN=9 HLSR=0.2 Restart# %g"%(RESTART_TRIAL)
+    region_num = '3'
+    num_lgn=NUM_LGN; hlsr=HLSR
+    runcodestr ="#LGN=%g HLSR=%.5f Restart# %g"%(NUM_LGN, HLSR, RESTART_TRIAL)
+    lr = LR
+    iterations = ITERATIONS
     NORM_RESPONSE = False
     SAVEdat = True
-    VISUALIZE = False
+    VISUALIZE = True
     PLOT_CORR_STATS =False
     
     CONFIG={'region_num':region_num,
@@ -76,7 +83,14 @@ def main():
     'NORM_RESPONSE':NORM_RESPONSE,
     'SAVEdat':SAVEdat,
     'VISUALIZE':VISUALIZE,
-    'PLOT_CORR_STATS':PLOT_CORR_STATS
+    'PLOT_CORR_STATS':PLOT_CORR_STATS,
+    'GPU_ID' :GPU_ID,
+    'RESTART_TRIAL':RESTART_TRIAL,
+    'SEED':SEED,
+    'ITERATIONS':ITERATIONS,
+    'LR':LR,
+    'NUM_LGN': NUM_LGN,
+    'HLSR':HLSR
     }
     
     ########################################################################
@@ -91,8 +105,7 @@ def main():
     # Create tensorflow vars
     images = tf.placeholder(dtype=tf.float32, shape=[None, train_input.shape[-1]], name='images')
     neural_response = tf.placeholder(dtype=tf.float32, shape=[None, train_set.shape[-1]], name='neural_response') # , shape=)
-    lr = 1e-3
-    iterations = 1000
+
 
     with tf.device(GPUcode):
       with tf.variable_scope('hsm') as scope:
@@ -129,7 +142,7 @@ def main():
     # Need to initialize both of these if supplying num_epochs to inputs
     sess.run(tf.group(tf.initialize_all_variables(),
      tf.initialize_local_variables()))
-    summary_dir = os.path.join("TFtrainingSummary/Region1_not_norm/AntolikRegion%s_lr%.5f_itr%g_%s"%(region_num,lr,iterations,dt_stamp))
+    summary_dir = os.path.join("TFtrainingSummary/LargeIterations_100k/AntolikRegion%s_lr%.5f_itr%g_%s"%(region_num,lr,iterations,dt_stamp))
     summary_writer = tf.train.SummaryWriter(summary_dir, sess.graph)
 
 

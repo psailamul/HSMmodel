@@ -84,6 +84,7 @@ def plot_training_behav(runcodestr,loss_list,MSE_list,corr_list,activation_summa
     plt.xlabel('iterations')
 
     plt.suptitle("Code: %s lr=%.5f , itr = %g\n[%s]"%(runcodestr,lr,iterations,str(datetime.now())))
+    plt.show()
     return fig, ax
     """
     if(PLOT):
@@ -108,14 +109,16 @@ def main():
     '\.', str(datetime.now()))[0].\
     replace(' ', '_').replace(':', '_').replace('-', '_')
   region_num='1'
-  lr=1E-03; iterations=2500
+  lr=1E-03; iterations=500
 
   current_path = os.getcwd()+'/'
-  data_dir = os.path.join(  "TFtrainingSummary/Region"+region_num+'/')
-  all_folders = os.listdir(current_path+data_dir)
-  fname = "TRdat_trained_HSM_3_trial50_seed50.npz"
+  #data_dir = os.path.join(  "TFtrainingSummary/Region"+region_num+'/')
+  data_dir = os.path.join(  "TFtrainingSummary/500itr/")
+  sim_folder = "AntolikRegion1_lr0.00100_itr500_2017_06_27_19_36_30/"
+  fname = "TRdat_trained_HSM_3_trial50_seed50.npz" 
   fullpath = data_dir+sim_folder+fname
   npz_dat = np.load(fullpath)
+
 
   trial_num, seed_num = get_trials_seednum(fullpath)
 
@@ -141,6 +144,7 @@ def main():
 
   responses=train_set
   pred_act = TR_last_pred_response;
+  #pred_act = TR_1st_pred_response;
   corr = computeCorr(pred_act, train_set)
   corr[np.isnan(corr)]=0.0
   plot_act_of_max_min_corr(pred_act,responses,corr)

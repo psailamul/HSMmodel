@@ -48,7 +48,7 @@ class TheanoVisionModel(param.Parameterized):
 
           self.free_params = {}
           self.free_param_count = 0
-
+          # K as a variable in expression
           self.K = T.dvector('K') #This will hold the free-parameters Theano vector ************************************************
           self.bounds = [] #This will hold the bounds
           self.init_bounds = [] #This will hold the bounds for parameter initialization
@@ -65,15 +65,15 @@ class TheanoVisionModel(param.Parameterized):
           Bounds should be tuple (min,max)
           """
           if type(shape) == tuple:
-             self.free_params[name] = (self.free_param_count,shape)
+             self.free_params[name] = (self.free_param_count,shape) # --> tuple that tell start index and shape of each "type" of parameter ex. 'center_weight': (36, 9)
              self.free_param_count = self.free_param_count + shape[0]*shape[1]
              for i in xrange(0,shape[0]*shape[1]):
-                 self.bounds.append(bounds)
+                 self.bounds.append(bounds) # self.bounds = list of bounds for each parameter (the exact parameter) --> size = [free_param_count , 2] ex [2435, 2]
                  if init_bounds != None:
-                    self.init_bounds.append(init_bounds)
+                    self.init_bounds.append(init_bounds) #bounds when initialize the parameter
                  else:
-                    self.init_bounds.append(bounds)
-          else:
+                    self.init_bounds.append(bounds) # If the initialize bounds doesn't specify --> set initialized bound to the overall bound
+          else: #shape size = scalar ex. self.num_lgn (=9)
              self.free_params[name] = (self.free_param_count,shape)
              self.free_param_count = self.free_param_count + shape
              for i in xrange(0,shape):
@@ -122,14 +122,17 @@ class TheanoVisionModel(param.Parameterized):
             Returns theano created function, that takes model parametrization as input (a vector of floats), and returns the
             response of the model to the training set stored in self.X as output.
             """
-            return theano.function(inputs=[self.K], outputs=self.model,mode='FAST_RUN')
+            #https://theano.readthedocs.io/en/rel-0.6rc3/library/compile/function.html#
+            return theano.function(inputs=[self.K], outputs=self.model,mode='FAST_RUN') #return (scalar) loss
+            
 
         def der(self):
             """
             Returns theano created function, that takes model parametrization as input (a vector of floats), and returns the
             response of the first derivative of the model to the training set stored in self.X as output.
             """
-            g_K = T.grad(self.model, self.K)
+            g_K = T.grad(self.model, self.K) #T.grad(scalar cost, variable to compute gradient)
+            import ipdb; ipdb.set_trace()
             return theano.function(inputs=[self.K], outputs=g_K,mode='FAST_RUN')
 
         def response(self,X,kernel):
@@ -164,6 +167,7 @@ class TheanoVisionModel(param.Parameterized):
 
         def getParam(self,param_vector,param_name):
             """
+            #param_vector = self.K 
             Returns the subvector of param_vector corresponding to the parameter in param_name.
             Note that this function returns a TensorVariable datatype.
             """
@@ -202,4 +206,4 @@ class TheanoVisionModel(param.Parameterized):
             The seed parameter sets the seed of the random number generator used to draw the random vector.
             """
             seed(s)
-            return [a[0] + (a[1]-a[0])/4.0 + rand()*(a[1]-a[0])/2.0  for a in self.init_bounds]
+            return [a[0] + (a[1]-a[0])/4.0 + rand()*(a[1]-a[0])/2.0  for a in self.init_bounds] #Distribution of rand() = uniform

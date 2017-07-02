@@ -6,7 +6,7 @@ def computeCorr(pred_act,responses):
     """
     Compute correlation between predicted and recorded activity for each cell
     """
-
+    #import ipdb; ipdb.set_trace()
     num_pres,num_neurons = np.shape(responses)
     corr=np.zeros(num_neurons)
     

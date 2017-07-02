@@ -109,8 +109,9 @@ def get_trials_seednum(fullpath):
   return trial_num, seed_num
 
 SAVEFIG = True
+PLOT=True
 
-def main(region_num='1', lr=1E-03, iterations=2500):
+def main(region_num='1', lr=1E-03, iterations=100000):
     # Read file
   if SAVEFIG :
     date=str(datetime.now())
@@ -124,7 +125,8 @@ def main(region_num='1', lr=1E-03, iterations=2500):
       replace(' ', '_').replace(':', '_').replace('-', '_')
   
   current_path = os.getcwd()+'/'
-  data_dir = os.path.join(  "TFtrainingSummary/Region"+region_num+'/')
+  #data_dir = os.path.join(  "TFtrainingSummary/Region"+region_num+'/')
+  data_dir = os.path.join(  "TFtrainingSummary/LargeIterations_100k/")
 
   all_folders = os.listdir(current_path+data_dir)
   for sim_folder in all_folders:
@@ -165,14 +167,14 @@ def main(region_num='1', lr=1E-03, iterations=2500):
            activation_summary_lgn=TR_mean_LGNact,
            activation_summary_l1=TR_mean_L1act,
            yhat_std=TR_std_pred_response,
-           lr=lr, iterations=iterations)
+           lr=lr, iterations=iterations, PLOT=PLOT)
 
       responses = train_set
       pred_act = TR_last_pred_response;
       corr = computeCorr(pred_act, train_set)
       corr[np.isnan(corr)]=0.0
-      fig_max,fig_min = plot_act_of_max_min_corr(runcodestr,pred_act,responses,corr)
-      fig_hist, ax = hist_of_pred_and_record_response(runcodestr,pred_act,responses,cell_id=np.argmax(corr))
+      fig_max,fig_min = plot_act_of_max_min_corr(runcodestr,pred_act,responses,corr,PLOT=PLOT)
+      fig_hist, ax = hist_of_pred_and_record_response(runcodestr,pred_act,responses,cell_id=np.argmax(corr),PLOT=PLOT)
 
       if SAVEFIG:
         sim_code="Region%s_lr%.5f_itr%g_trial%g_seed%g"%(region_num,lr,iterations,trial_num,seed_num)
@@ -185,7 +187,7 @@ def main(region_num='1', lr=1E-03, iterations=2500):
       print "Saved: Time %s\n" %(time.time() - run_time)
 
 if __name__ == "__main__":
-  region_num='3'
+  region_num='1'
   tt_run_time = time.time()
   main(region_num=region_num)
   print "Finished Region"+region_num+ ": Time %s\n" %(time.time() - tt_run_time)

@@ -3,11 +3,11 @@ import tensorflow as tf
 import param
 
 
-def logistic_loss(x,t=0, coef=1):
+def logistic_loss(x,t=0.0, coef=1.0):
   return coef * tf.log(1 + tf.exp(coef*(x-t)))
   
 class tf_HSM():
-    '''
+    """
     Model for fitting vision data to neural recordings.
 
     params:
@@ -26,52 +26,57 @@ class tf_HSM():
       loss: loss value. This model use log_loss
       score : MSE
       pred_neural_response: prediction for neural response
-    '''
-
+    """
+    
     def __init__(self, NUM_LGN=9,HLSR=0.2, **params): #def __init__(**params):
-        self.num_lgn=[NUM_LGN]
-        self.hlsr = [HLSR]
-        #self.LGN_init = tf.random_uniform_initializer(0,None) 
-        #self.LGN_sc_init = tf.random_uniform_initializer(0.1/2.0,None)
-        #self.MLP_init = tf.truncated_normal_initializer(mean=0, stddev=0.01)  #unuse
-        self.activation = lambda x, y: logistic_loss(x, t=y, coef=1)
-        self.images = None
-        self.neural_response = None
-        self.lgn_trainable = True
-        self.UNIFORM_W_init = tf.random_uniform_initializer(-10/2.0,10.0/2.0)
-        self.UNIFORM_Threshold_init = tf.random_uniform_initializer(0.0,10.0/2.0)
+      get_bounds_for_init = lambda lo, up:  [lo + (up-lo)/4.0 , lo + (up-lo)/4.0 + (up-lo)/2.0]
+      self.num_lgn=[NUM_LGN]
+      self.hlsr = [HLSR]
+      self.activation = lambda x, y: logistic_loss(x, t=y, coef=1)
+      self.images = None
+      self.neural_response = None
+      self.lgn_trainable = True
+      [L,U]=get_bounds_for_init(-10,10)
+      self.UNIFORM_W_init = tf.random_uniform_initializer(L,U)
+      [L,U]=get_bounds_for_init(0,10)
+      self.UNIFORM_Threshold_init = tf.random_uniform_initializer(L,U)
+      self.LGN_params={}
+      self.bounds = {}
 
     def construct_free_params(self):
-
       # LGN initialization
-      self.lgn_x = tf.get_variable(name="x_pos", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable) # 0-31
-      self.lgn_y = tf.get_variable(name="y_pos", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable) # 0-31
-      self.lgn_sc = tf.get_variable(name="size_center", shape=self.num_lgn, initializer=self.LGN_sc_init, trainable=self.lgn_trainable)  #0.1 - 31
-      self.lgn_ss = tf.get_variable(name="size_surround", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable) #0.1 - 31
-      self.lgn_rc = tf.get_variable(name="center_weight", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable)  #0-10
-      self.lgn_rs = tf.get_variable(name="surround_weight", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable) #0-10
+      self.lgn_x = tf.get_variable(name="x_pos", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable);self.bounds['lgn_x']=(0,31) # 0-31
+      self.lgn_y = tf.get_variable(name="y_pos", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable);self.bounds['lgn_y']=(0,31)  # 0-31
+      self.lgn_sc = tf.get_variable(name="size_center", shape=self.num_lgn, initializer=self.LGN_sc_init, trainable=self.lgn_trainable) ; self.bounds['lgn_sc']=(0.1,31)   #0.1 - 31
+      self.lgn_ss = tf.get_variable(name="size_surround", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable) ; self.bounds['lgn_ss']=(0.0,31)  #0.0 - 31
+      self.lgn_rc = tf.get_variable(name="center_weight", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable) ; self.bounds['lgn_rc']=(0.0,10.0)   #0-10
+      self.lgn_rs = tf.get_variable(name="surround_weight", shape=self.num_lgn, initializer=self.LGN_init, trainable=self.lgn_trainable) ; self.bounds['lgn_rs']=(0.0,10.0)  #0-10
 
       # MLP
       self.hidden_w = tf.get_variable(
         name="hidden_weights",
         shape=(self.num_lgn[0], int(self.num_neurons[0]*self.hlsr[0])), # [9,20]
-        initializer=self.UNIFORM_W_init)  #init_bounds  #-10, 10
-
+        initializer=self.UNIFORM_W_init)  #init_bounds  #-10, 10 #bounds = (-inf,+inf)
+      self.bounds['hidden_weights']=(None,None)
+       
       self.hl_tresh = tf.get_variable(
         name="hidden_layer_threshold",
         shape=int(self.num_neurons[0]*self.hlsr[0]),  #20
-        initializer=self.UNIFORM_Threshold_init) #init_bounds # 0-10
-
+        initializer=self.UNIFORM_Threshold_init) #init_bounds # 0-10 #bounds=(0,inf)
+      self.bounds['hidden_layer_threshold']=(0,None)
+      
       self.output_w = tf.get_variable(
-        name="output_w",
+        name="output_weights",
         shape=(int(self.num_neurons[0]*self.hlsr[0]), int(self.num_neurons[0])), #20, 103
-        initializer=self.UNIFORM_W_init) # init_bound -10, 10
-
+        initializer=self.UNIFORM_W_init) # init_bound -10, 10   #bounds = (-inf,+inf)
+      self.bounds['output_weights']=(None,None)
+      
       self.ol_tresh = tf.get_variable(
         name="output_layer_threshold", #output_layer_threshold
         shape=int(self.num_neurons[0]), #103
-        initializer=self.UNIFORM_Threshold_init) # init_bound 0,10
-      
+        initializer=self.UNIFORM_Threshold_init) # init_bound 0,10 #bounds = (0, +inf)
+      self.bounds['output_layer_threshold']=(0,None)
+
       #Check bounds
       #checkbounds = lambda val, lower_bound, upper_bound : tf.minimum(tf.maximum(val,lower_bound), upper_bound)
       #self.hidden_w =checkbounds(self.hidden_w,-10,10); self.hl_tresh = checkbounds(self.hl_tresh,0,10);
@@ -84,7 +89,7 @@ class tf_HSM():
 
       #Check bounds
       checkbounds = lambda val, lower_bound, upper_bound : tf.minimum(tf.maximum(val,lower_bound), upper_bound)
-      
+      #actually, I would prefer resampling over max/min values
 
       x = checkbounds(x,0.0,self.img_size); y = checkbounds(y,0.0,self.img_size)
       sc =checkbounds(x,0.1,self.img_size); ss = checkbounds(y,0.0,self.img_size)
@@ -125,7 +130,7 @@ class tf_HSM():
       return i < self.num_lgn[0]  
 
     def build(self, data, label):
-      
+      get_bounds_for_init = lambda lo, up:  [lo + (up-lo)/4.0 , lo + (up-lo)/4.0 + (up-lo)/2.0]
       self.img_vec_size = int(data.get_shape()[-1])
       self.img_size = np.sqrt(self.img_vec_size)
       self.num_neurons = [int(label.get_shape()[-1])]
@@ -133,9 +138,10 @@ class tf_HSM():
       grid_xx, grid_yy = tf.meshgrid(tf.range(self.img_size),tf.range(self.img_size))
       self.grid_xx = tf.cast(tf.reshape(grid_xx, [self.img_vec_size]), tf.float32)
       self.grid_yy = tf.cast(tf.reshape(grid_yy, [self.img_vec_size]), tf.float32)
-
-      self.LGN_init = tf.random_uniform_initializer(0,self.img_size/2.0)
-      self.LGN_sc_init = tf.random_uniform_initializer(0.1/2.0,self.img_size/2.0)
+      [L,U] = get_bounds_for_init(0, self.img_size)
+      self.LGN_init = tf.random_uniform_initializer(L,U) #check here may be add another function?
+      [L,U]=get_bounds_for_init(0.1, self.img_size)
+      self.LGN_sc_init = tf.random_uniform_initializer(L,U)
       #import ipdb; ipdb.set_trace()
       self.construct_free_params()
 
@@ -152,6 +158,7 @@ class tf_HSM():
         lgn_ss=self.lgn_ss,
         lgn_rc=self.lgn_rc,
         lgn_rs=self.lgn_rs)
+      # Activation function of LGN itself is linear = > no additional filter
       
       # Run MLP
       checklowerbounds = lambda val, lower_bound : tf.maximum(val,lower_bound)
@@ -161,7 +168,12 @@ class tf_HSM():
       self.l1 = self.activation(tf.matmul(self.lgn_out, self.hidden_w), self.hl_tresh) #RELU that shift
       self.output = self.activation(tf.matmul(self.l1, self.output_w), self.ol_tresh)
       
-      #self.LGN_params={'x_pos':self.lgn_x, 'y_pos':self.lgn_y, 'lgn_sc':self.lgn_sc, 'lgn_ss':self.lgn_ss, 'lgn_rc':self.lgn_rc, 'lgn_rs':self.lgn_rs}
+      self.LGN_params={'x_pos':self.lgn_x, 'y_pos':self.lgn_y, 'lgn_sc':self.lgn_sc, 'lgn_ss':self.lgn_ss, 'lgn_rc':self.lgn_rc, 'lgn_rs':self.lgn_rs}
       
       
       return self.output, self.l1, self.lgn_out
+      def bounds(self):
+        return self.bounds
+        
+      def der_all(self):
+        return tf.grad(self.output, tf.trainable_variables())
