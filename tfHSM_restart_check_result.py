@@ -35,8 +35,10 @@ def hist_of_pred_and_record_response(runcodestr, pred_response, recorded_respons
    plt.show()
   return fig,ax
 
-def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False):
+def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False,ZOOM=False):
     
+    fig_max_z = None
+    fig_min_z=None
     imax = np.argmax(corr) # note : actually have to combine neurons in all regions
     fig_max =plt.figure()
     plt.plot(train_set[:,imax],'-ok')
@@ -44,7 +46,15 @@ def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False):
     plt.title('Code: %s\nCell#%d has max corr of %f'%(runcodestr,imax+1,np.max(corr)))
     if(PLOT):
       plt.show()
-
+    if(ZOOM):
+      fig_max_z =plt.figure()
+      plt.plot(train_set[:,imax],'-ok')
+      plt.plot(yhat[:,imax],'--or')
+      plt.xlim((600,650))
+      plt.title('Code: %s\nCell#%d has max corr of %f'%(runcodestr,imax+1,np.max(corr)))
+      if(PLOT):
+        plt.show()
+      
     imin = np.argmin(corr) # note : actually have to combine neurons in all regions
     fig_min = plt.figure()
     plt.plot(train_set[:,imin],'-ok')
@@ -52,8 +62,17 @@ def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False):
     plt.title('Code: %s\nCell#%d has min corr of %f'%(runcodestr,imin+1,np.min(corr)))
     if(PLOT):
       plt.show()
+    if(ZOOM):
+      fig_min_z =plt.figure()
+      plt.plot(train_set[:,imin],'-ok')
+      plt.plot(yhat[:,imin],'--or')
+      plt.xlim((600,650))
+      plt.title('Code: %s\nCell#%d has max corr of %f'%(runcodestr,imax+1,np.max(corr)))
+      if(PLOT):
+        plt.show()
 
-    return fig_max, fig_min
+
+    return fig_max, fig_max_z, fig_min, fig_min_z
 
         # check the training
 def plot_training_behav(runcodestr,loss_list,MSE_list,corr_list,activation_summary_lgn,activation_summary_l1,yhat_std,lr=1E-03,iterations=2500,PLOT=False):
@@ -130,6 +149,8 @@ def main(region_num='1', lr=1E-03, iterations=100000):
 
   all_folders = os.listdir(current_path+data_dir)
   for sim_folder in all_folders:
+    if not str.startswith(sim_folder,'AntolikRegion'+region_num):
+      continue
     sim_folder+='/'
     directory = current_path+data_dir+sim_folder
     print("------------------------------------------")
@@ -168,26 +189,28 @@ def main(region_num='1', lr=1E-03, iterations=100000):
            activation_summary_l1=TR_mean_L1act,
            yhat_std=TR_std_pred_response,
            lr=lr, iterations=iterations, PLOT=PLOT)
-
+      #import ipdb; ipdb.set_trace() 
       responses = train_set
       pred_act = TR_last_pred_response;
       corr = computeCorr(pred_act, train_set)
       corr[np.isnan(corr)]=0.0
-      fig_max,fig_min = plot_act_of_max_min_corr(runcodestr,pred_act,responses,corr,PLOT=PLOT)
+      fig_max, fig_max_z, fig_min, fig_min_z = plot_act_of_max_min_corr(runcodestr,pred_act,responses,corr,PLOT=PLOT, ZOOM=True)
       fig_hist, ax = hist_of_pred_and_record_response(runcodestr,pred_act,responses,cell_id=np.argmax(corr),PLOT=PLOT)
 
       if SAVEFIG:
         sim_code="Region%s_lr%.5f_itr%g_trial%g_seed%g"%(region_num,lr,iterations,trial_num,seed_num)
         fig_train.savefig(Fig_fold+sim_code+"_TrainRec.png")
         fig_max.savefig(Fig_fold+sim_code+"_MaxCorr.png")
+        fig_max_z.savefig(Fig_fold+sim_code+"_MaxCorrZoom.png")
         fig_min.savefig(Fig_fold+sim_code+"_MinCorr.png")
+        fig_min_z.savefig(Fig_fold+sim_code+"_MinCorrZoom.png")
         fig_hist.savefig(Fig_fold+sim_code+"_ResponseDist.png")
 
       plt.close("all")      
       print "Saved: Time %s\n" %(time.time() - run_time)
 
 if __name__ == "__main__":
-  region_num='1'
+  region_num='3'
   tt_run_time = time.time()
   main(region_num=region_num)
   print "Finished Region"+region_num+ ": Time %s\n" %(time.time() - tt_run_time)

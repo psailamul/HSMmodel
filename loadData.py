@@ -34,7 +34,7 @@ vld_set3 = np.load('/home/pachaya/AntolikData/SourceCode/Data/region3/validation
 #out = fitHSM(r1_train_input,r1_train_set)
 
 
-
+import ipdb; ipdb.set_trace()
 
 [Ks1,hsm1] = np.load('out_region1.npy')
 [Ks2,hsm2] = np.load('out_region2.npy')
