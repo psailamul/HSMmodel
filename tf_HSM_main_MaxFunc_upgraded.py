@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import param
-from tf_HSM-upgraded import tf_HSM
+from tf_HSM_upgraded import tf_HSM
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 import matplotlib.pyplot as plt
@@ -11,9 +11,6 @@ from tensorflow.python import debug
 import time
 from visualization import *
 import sys
-
-
-# python tf_HSM_main_MaxFunc_100k-upgraded.py GPU_ID=2 RESTART_TRIAL=1 SEED=1 ITERATIONS=100000
 
 def correlate_vectors(yhat_array, y_array):
   corrs = []      
@@ -26,7 +23,7 @@ def correlate_vectors(yhat_array, y_array):
   return corrs
 
 def log_likelihood(predictions,targets,epsilon =0.0000000000000000001):
-  return tf.reduce_sum(predictions) - tf.reduce_sum(tf.mul(targets,tf.log(predictions + epsilon)))
+  return tf.reduce_sum(predictions) - tf.reduce_sum(tf.multiply(targets,tf.log(predictions + epsilon)))
 
 def hist_of_pred_and_record_response(pred_response, recorded_response, cell_id=0):
   plt.subplot(121); plt.hist(recorded_response[:,cell_id]); plt.title('Recorded Response');
@@ -58,7 +55,7 @@ def main():
     # Simulation Config
     ########################################################################
     
-    GPU_ID = 0; RESTART_TRIAL=0; SEED =0; ITERATIONS=100000; LR = 1e-3; NUM_LGN=9; HLSR=0.2;
+    GPU_ID = 0; RESTART_TRIAL=2; SEED =2; ITERATIONS=10; LR = 1e-3; NUM_LGN=9; HLSR=0.2;
     if len(sys.argv) > 1:
         for ii in range(1,len(sys.argv)):
             arg = sys.argv[ii]
@@ -72,14 +69,14 @@ def main():
             '\.', str(datetime.now()))[0].\
             replace(' ', '_').replace(':', '_').replace('-', '_')
             
-    region_num = '2'
+    region_num = '3'
     num_lgn=NUM_LGN; hlsr=HLSR
     runcodestr ="#LGN=%g HLSR=%.5f Restart# %g"%(NUM_LGN, HLSR, RESTART_TRIAL)
     lr = LR
     iterations = ITERATIONS
     NORM_RESPONSE = False
     SAVEdat = True
-    VISUALIZE = False
+    VISUALIZE = True
     PLOT_CORR_STATS =False
     
     CONFIG={'region_num':region_num,
@@ -132,22 +129,22 @@ def main():
         score = tf.nn.l2_loss(pred_neural_response - neural_response)
         
         # Track the loss and score
-        tf.scalar_summary("loss", loss)
-        tf.scalar_summary("score", score)
+        tf.summary.scalar("loss", loss)
+        tf.summary.scalar("score", score)
 
 
     # Set up summaries and saver
-    saver = tf.train.Saver(tf.all_variables(), max_to_keep=100)
-    summary_op = tf.merge_all_summaries()
+    saver = tf.train.Saver(tf.global_variables(), max_to_keep=100)
+    summary_op = tf.summary.merge_all()
 
     # Initialize the graph
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
 
     # Need to initialize both of these if supplying num_epochs to inputs
-    sess.run(tf.group(tf.initialize_all_variables(),
-     tf.initialize_local_variables()))
-    summary_dir = os.path.join("TFtrainingSummary/LargeIterations_100k/AntolikRegion%s_lr%.5f_itr%g_%s"%(region_num,lr,iterations,dt_stamp))
-    summary_writer = tf.train.SummaryWriter(summary_dir, sess.graph)
+    sess.run(tf.group(tf.global_variables_initializer(),
+     tf.local_variables_initializer()))
+    summary_dir = os.path.join("TFtrainingSummary/AntolikRegion%s_lr%.5f_itr%g_%s"%(region_num,lr,iterations,dt_stamp))
+    summary_writer = tf.summary.FileWriter(summary_dir, sess.graph)
 
 
     loss_list, activation_summary_lgn, activation_summary_l1, yhat_std, MSE_list, corr_list = [], [], [], [], [],[]

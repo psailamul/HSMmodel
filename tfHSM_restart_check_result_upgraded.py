@@ -24,7 +24,7 @@ def correlate_vectors(yhat_array, y_array):
   return corrs
 
 def log_likelihood(predictions,targets,epsilon =0.0000000000000000001):
-  return tf.reduce_sum(predictions) - tf.reduce_sum(tf.mul(targets,tf.log(predictions + epsilon)))
+  return tf.reduce_sum(predictions) - tf.reduce_sum(tf.multiply(targets,tf.log(predictions + epsilon)))
 
 def hist_of_pred_and_record_response(runcodestr, pred_response, recorded_response, cell_id=0, PLOT=False):
   fig,ax = plt.subplots(figsize=(12,8))
