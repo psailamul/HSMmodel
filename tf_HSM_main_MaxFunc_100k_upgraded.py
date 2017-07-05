@@ -171,18 +171,14 @@ def main():
     summary_fname = "trainedHSM__region"+region_num+"_trial%g"%(RESTART_TRIAL)
     
     for idx in range(iterations):
-
       itr_time=time.time()
-
       _, loss_value, score_value, yhat, l1_response, lgn_response = sess.run(
         [train_op, loss, score, pred_neural_response, l1, lgn_out],
         feed_dict={images: train_input, neural_response: train_set})
       #it_corr = np.mean(correlate_vectors(yhat, train_set))
-      
       corr=computeCorr(yhat, train_set)
       corr[np.isnan(corr)]=0.0
       it_corr = np.mean(corr)
-      
       corr_list += [it_corr]
       loss_list += [loss_value]
       MSE_list += [score_value]
