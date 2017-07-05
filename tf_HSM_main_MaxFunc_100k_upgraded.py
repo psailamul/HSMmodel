@@ -3,7 +3,7 @@ import tensorflow as tf
 import param
 from tf_HSM_upgraded import tf_HSM
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 import matplotlib.pyplot as plt
 from datetime import datetime
 import re 
@@ -12,8 +12,17 @@ import time
 from visualization import *
 import sys
 
+def get_path():
+	import socket
+	if socket.gethostname() =='x7' :
+		return '/home/pachaya/HSMmodel/'
+	elif socket.gethostname() =='g13':
+		return '/home/pachaya/AntolikData/SourceCode/'
+	else:
+		raise Exception('Unknown Host : Please add your directory at get_path()')
 
-# python tf_HSM_main_MaxFunc_100k_upgraded.py GPU_ID=2 RESTART_TRIAL=1 SEED=1 ITERATIONS=100000
+
+# CUDA_VISIBLE_DEVICES=2 python tf_HSM_main_MaxFunc_100k_upgraded.py RESTART_TRIAL=3 SEED=3 LR=1e-3 ITERATIONS=100000
 
 def correlate_vectors(yhat_array, y_array):
   corrs = []      
@@ -58,13 +67,14 @@ def main():
     # Simulation Config
     ########################################################################
     
-    GPU_ID = 0; RESTART_TRIAL=1; SEED =1; ITERATIONS=100000; LR = 1e-2; NUM_LGN=9; HLSR=0.2;
-    region_num = '1'
+    REGION =1; RESTART_TRIAL=2; SEED =2; ITERATIONS=100000; LR = 1e-3; NUM_LGN=9; HLSR=0.2;
+    
     if len(sys.argv) > 1:
         for ii in range(1,len(sys.argv)):
             arg = sys.argv[ii]
+            print(arg)
             exec(arg) 
-    GPUcode='/gpu:%g'%(GPU_ID)
+    #GPUcode='/gpu:%g'%(GPU_ID)
     tf.set_random_seed(SEED)
     print('SEED : %g'%(SEED))
     tt_run_time = time.time()
@@ -72,14 +82,18 @@ def main():
     dt_stamp = re.split(
             '\.', str(datetime.now()))[0].\
             replace(' ', '_').replace(':', '_').replace('-', '_')
+            
+    region_num = str(REGION)
     num_lgn=NUM_LGN; hlsr=HLSR
-    runcodestr ="#LGN=%g HLSR=%.5f Restart# %g"%(NUM_LGN, HLSR, RESTART_TRIAL)
     lr = LR
     iterations = ITERATIONS
     NORM_RESPONSE = False
     SAVEdat = True
     VISUALIZE = False
     PLOT_CORR_STATS =False
+    #runcodestr ="#LGN=%g HLSR=%.5f Restart# %g"%(NUM_LGN, HLSR, RESTART_TRIAL)
+    runcodestr ="Machine: X7 LR: %.5f Iterations: %g Restart#: %g"%(lr, iterations, RESTART_TRIAL)
+
     
     CONFIG={'region_num':region_num,
     'runcodestr':runcodestr,
@@ -87,7 +101,7 @@ def main():
     'SAVEdat':SAVEdat,
     'VISUALIZE':VISUALIZE,
     'PLOT_CORR_STATS':PLOT_CORR_STATS,
-    'GPU_ID' :GPU_ID,
+    #'GPU_ID' :GPU_ID,
     'RESTART_TRIAL':RESTART_TRIAL,
     'SEED':SEED,
     'ITERATIONS':ITERATIONS,
@@ -97,10 +111,12 @@ def main():
     }
     
     ########################################################################
+    PATH=get_path()
+    SUMMARY_DIR = 'TFtrainingSummary/'
     #import ipdb; ipdb.set_trace()
     # Download data from a region
-    train_input=np.load('/home/pachaya/AntolikData/SourceCode/Data/region' + region_num+'/training_inputs.npy')
-    train_set=np.load('/home/pachaya/AntolikData/SourceCode/Data/region' + region_num+'/training_set.npy')
+    train_input=np.load(PATH + 'Data/region' + region_num+'/training_inputs.npy')
+    train_set=np.load(PATH + 'Data/region' + region_num+'/training_set.npy')
 
     if(NORM_RESPONSE):
         train_set = train_set/(train_set.max()-train_set.min())
@@ -146,13 +162,13 @@ def main():
     # Need to initialize both of these if supplying num_epochs to inputs
     sess.run(tf.group(tf.global_variables_initializer(),
      tf.local_variables_initializer()))
-    summary_dir = os.path.join("TFtrainingSummary/LargeIterations_100k/AntolikRegion%s_lr%.5f_itr%g_%s"%(region_num,lr,iterations,dt_stamp))
+    summary_dir = os.path.join(SUMMARY_DIR+"AntolikRegion%s_lr%.5f_itr%g_SEED%g_%s"%(region_num,lr,iterations,SEED,dt_stamp))
     summary_writer = tf.summary.FileWriter(summary_dir, sess.graph)
 
 
     loss_list, activation_summary_lgn, activation_summary_l1, yhat_std, MSE_list, corr_list = [], [], [], [], [],[]
     
-    summary_fname = "trained_HSM_%s_trial%g_seed%g"%(GPU_ID,RESTART_TRIAL,SEED)
+    summary_fname = "trainedHSM__region"+region_num+"_trial%g"%(RESTART_TRIAL)
     
     for idx in range(iterations):
       
@@ -171,7 +187,8 @@ def main():
       activation_summary_lgn += [np.mean(lgn_response)]
       activation_summary_l1 += [np.mean(l1_response)]
       yhat_std += [np.std(yhat)]
-      saver.save(sess, '%s/%s'%(summary_dir,summary_fname))
+      if idx % 1000 == 0:
+        saver.save(sess, '%s/%s'%(summary_dir,summary_fname),global_step=idx)
       if(idx==0):
         yhat_1st = yhat
         l1_response_1st=l1_response

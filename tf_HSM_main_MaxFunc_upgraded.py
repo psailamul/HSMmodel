@@ -9,9 +9,40 @@ from datetime import datetime
 import re 
 from tensorflow.python import debug 
 import time
-from visualization import *
 import sys
+from scipy.stats import pearsonr
 
+
+def computeCorr(pred_act,responses):
+    """
+    Compute correlation between predicted and recorded activity for each cell
+    """
+    #import ipdb; ipdb.set_trace()
+    num_pres,num_neurons = np.shape(responses)
+    corr=np.zeros(num_neurons)
+    
+    for i in xrange(0,num_neurons):
+        if np.all(pred_act[:,i]==0) & np.all(responses[:,i]==0):
+            corr[i]=1.
+        elif not(np.all(pred_act[:,i]==0) | np.all(responses[:,i]==0)):
+            # /!\ To prevent errors due to very low values during computation of correlation
+            if abs(pred_act[:,i]).max()<1:
+                pred_act[:,i]=pred_act[:,i]/abs(pred_act[:,i]).max()
+            if abs(responses[:,i]).max()<1:
+                responses[:,i]=responses[:,i]/abs(responses[:,i]).max()    
+            corr[i]=pearsonr(np.array(responses)[:,i].flatten(),np.array(pred_act)[:,i].flatten())[0]
+            
+    return corr
+    
+def get_path():
+	import socket
+	if socket.gethostname() =='x7' :
+		return '/home/pachaya/HSMmodel/'
+	elif socket.gethostname() =='g13':
+		return '/home/pachaya/AntolikData/SourceCode/'
+	else:
+		raise Exception('Unknown Host : Please add your directory at get_path()')
+		
 def correlate_vectors(yhat_array, y_array):
   corrs = []      
   for yhat, y in zip(np.transpose(yhat_array), np.transpose(y_array)):
@@ -55,7 +86,8 @@ def main():
     # Simulation Config
     ########################################################################
     
-    GPU_ID = 0; RESTART_TRIAL=2; SEED =2; ITERATIONS=10; LR = 1e-3; NUM_LGN=9; HLSR=0.2;
+    GPU_ID = 0; RESTART_TRIAL=2; SEED =2; ITERATIONS=1000; LR = 1e-2; NUM_LGN=9; HLSR=0.2;
+    REGION =1
     if len(sys.argv) > 1:
         for ii in range(1,len(sys.argv)):
             arg = sys.argv[ii]
@@ -69,7 +101,7 @@ def main():
             '\.', str(datetime.now()))[0].\
             replace(' ', '_').replace(':', '_').replace('-', '_')
             
-    region_num = '3'
+    region_num = str(REGION)
     num_lgn=NUM_LGN; hlsr=HLSR
     runcodestr ="#LGN=%g HLSR=%.5f Restart# %g"%(NUM_LGN, HLSR, RESTART_TRIAL)
     lr = LR
@@ -95,10 +127,11 @@ def main():
     }
     
     ########################################################################
-
+    PATH=get_path()
+	
     # Download data from a region
-    train_input=np.load('/home/pachaya/AntolikData/SourceCode/Data/region' + region_num+'/training_inputs.npy')
-    train_set=np.load('/home/pachaya/AntolikData/SourceCode/Data/region' + region_num+'/training_set.npy')
+    train_input=np.load(PATH+'Data/region' + region_num+'/training_inputs.npy')
+    train_set=np.load(PATH + 'Data/region' + region_num+'/training_set.npy')
 
     if(NORM_RESPONSE):
         train_set = train_set/(train_set.max()-train_set.min())
@@ -152,7 +185,7 @@ def main():
     summary_fname = "trained_HSM_%s_trial%g_seed%g"%(GPU_ID,RESTART_TRIAL,SEED)
     
     for idx in range(iterations):
-      
+      tt_itr=time.time()
       _, loss_value, score_value, yhat, l1_response, lgn_response = sess.run(
         [train_op, loss, score, pred_neural_response, l1, lgn_out],
         feed_dict={images: train_input, neural_response: train_set})
@@ -168,18 +201,20 @@ def main():
       activation_summary_lgn += [np.mean(lgn_response)]
       activation_summary_l1 += [np.mean(l1_response)]
       yhat_std += [np.std(yhat)]
-      saver.save(sess, '%s/%s'%(summary_dir,summary_fname))
+      if idx % 100 == 0:
+        saver.save(sess, '%s/%s'%(summary_dir,summary_fname),global_step=idx)
       if(idx==0):
         yhat_1st = yhat
         l1_response_1st=l1_response
         lgn_response_1st=lgn_response
-      print 'Iteration: %s | Loss: %.5f | MSE: %.5f | Corr: %.5f |STD of yhat: %.5f' % (
+
+      print 'Iteration: %s | Loss: %.5f | MSE: %.5f | Corr: %.5f |STD of yhat: %.5f\n Run Time:: %s' % (
         idx,
         loss_value,
         score_value,
         it_corr,
-        np.std(yhat))
-
+        np.std(yhat),
+        time.time() - tt_itr)
 
     print "Training complete: Time %s" %(time.time() - tt_run_time)
 
