@@ -145,7 +145,7 @@ def main(region_num='1', lr=1E-03, iterations=100000):
   
   current_path = os.getcwd()+'/'
   #data_dir = os.path.join(  "TFtrainingSummary/Region"+region_num+'/')
-  data_dir = os.path.join(  "TFtrainingSummary/LargeIterations_100k/")
+  data_dir = os.path.join(  "TFtrainingSummary/x7/")
 
   all_folders = os.listdir(current_path+data_dir)
   for sim_folder in all_folders:

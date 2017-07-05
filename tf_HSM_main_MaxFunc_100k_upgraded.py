@@ -67,7 +67,7 @@ def main():
     # Simulation Config
     ########################################################################
     
-    REGION =1; RESTART_TRIAL=2; SEED =2; ITERATIONS=100000; LR = 1e-3; NUM_LGN=9; HLSR=0.2;
+    REGION =1; RESTART_TRIAL=0; SEED =0; ITERATIONS=100000; LR = 1e-2; NUM_LGN=9; HLSR=0.2;
     
     if len(sys.argv) > 1:
         for ii in range(1,len(sys.argv)):
@@ -92,7 +92,7 @@ def main():
     VISUALIZE = False
     PLOT_CORR_STATS =False
     #runcodestr ="#LGN=%g HLSR=%.5f Restart# %g"%(NUM_LGN, HLSR, RESTART_TRIAL)
-    runcodestr ="Machine: X7 LR: %.5f Iterations: %g Restart#: %g"%(lr, iterations, RESTART_TRIAL)
+    runcodestr ="Machine: g13 LR: %.5f Iterations: %g Restart#: %g"%(lr, iterations, RESTART_TRIAL)
 
     
     CONFIG={'region_num':region_num,
@@ -171,7 +171,7 @@ def main():
     summary_fname = "trainedHSM__region"+region_num+"_trial%g"%(RESTART_TRIAL)
     
     for idx in range(iterations):
-      
+      itr_time=time.time()
       _, loss_value, score_value, yhat, l1_response, lgn_response = sess.run(
         [train_op, loss, score, pred_neural_response, l1, lgn_out],
         feed_dict={images: train_input, neural_response: train_set})
@@ -187,21 +187,23 @@ def main():
       activation_summary_lgn += [np.mean(lgn_response)]
       activation_summary_l1 += [np.mean(l1_response)]
       yhat_std += [np.std(yhat)]
-      if idx % 1000 == 0:
+      if idx % 10000 == 0:
         saver.save(sess, '%s/%s'%(summary_dir,summary_fname),global_step=idx)
       if(idx==0):
         yhat_1st = yhat
         l1_response_1st=l1_response
         lgn_response_1st=lgn_response
-      print 'Iteration: %s | Loss: %.5f | MSE: %.5f | Corr: %.5f |STD of yhat: %.5f' % (
+      print 'Iteration: %s | Loss: %.5f | MSE: %.5f | Corr: %.5f |STD of yhat: %.5f\n Time ::: %s    Time since start::: %s' % (
         idx,
         loss_value,
         score_value,
         it_corr,
-        np.std(yhat))
+        np.std(yhat),
+        time.time()-itr_time,
+        time.time()-tt_run_time)
 
 
-    print "Training complete: Time %s" %(time.time() - tt_run_time)
+    print "Training complete: Time %s" %(time.time() - tt_runtime)
 
     #save
     if(SAVEdat):
