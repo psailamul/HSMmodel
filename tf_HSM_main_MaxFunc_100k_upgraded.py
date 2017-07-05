@@ -171,35 +171,34 @@ def main():
     summary_fname = "trainedHSM__region"+region_num+"_trial%g"%(RESTART_TRIAL)
     
     for idx in range(iterations):
-      tt_runtime=time.time()
+      itr_time=time.time()
       _, loss_value, score_value, yhat, l1_response, lgn_response = sess.run(
         [train_op, loss, score, pred_neural_response, l1, lgn_out],
         feed_dict={images: train_input, neural_response: train_set})
       #it_corr = np.mean(correlate_vectors(yhat, train_set))
-      
       corr=computeCorr(yhat, train_set)
       corr[np.isnan(corr)]=0.0
       it_corr = np.mean(corr)
-      
       corr_list += [it_corr]
       loss_list += [loss_value]
       MSE_list += [score_value]
       activation_summary_lgn += [np.mean(lgn_response)]
       activation_summary_l1 += [np.mean(l1_response)]
       yhat_std += [np.std(yhat)]
-      if idx % 1000 == 0:
+      if idx % 10000 == 0:
         saver.save(sess, '%s/%s'%(summary_dir,summary_fname),global_step=idx)
       if(idx==0):
         yhat_1st = yhat
         l1_response_1st=l1_response
         lgn_response_1st=lgn_response
-      print 'Iteration: %s | Loss: %.5f | MSE: %.5f | Corr: %.5f |STD of yhat: %.5f\n Run Time::: %s' % (
+      print 'Iteration: %s | Loss: %.5f | MSE: %.5f | Corr: %.5f |STD of yhat: %.5f\n Time ::: %s    Time since start::: %s' % (
         idx,
         loss_value,
         score_value,
         it_corr,
         np.std(yhat),
-        time.time()-tt_runtime)
+        time.time()-itr_time,
+        time.time()-tt_run_time)
 
 
     print "Training complete: Time %s" %(time.time() - tt_run_time)
