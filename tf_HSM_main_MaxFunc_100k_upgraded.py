@@ -171,7 +171,7 @@ def main():
     summary_fname = "trainedHSM__region"+region_num+"_trial%g"%(RESTART_TRIAL)
     
     for idx in range(iterations):
-      
+      tt_runtime=time.time()
       _, loss_value, score_value, yhat, l1_response, lgn_response = sess.run(
         [train_op, loss, score, pred_neural_response, l1, lgn_out],
         feed_dict={images: train_input, neural_response: train_set})
@@ -193,12 +193,13 @@ def main():
         yhat_1st = yhat
         l1_response_1st=l1_response
         lgn_response_1st=lgn_response
-      print 'Iteration: %s | Loss: %.5f | MSE: %.5f | Corr: %.5f |STD of yhat: %.5f' % (
+      print 'Iteration: %s | Loss: %.5f | MSE: %.5f | Corr: %.5f |STD of yhat: %.5f\n Run Time::: %s' % (
         idx,
         loss_value,
         score_value,
         it_corr,
-        np.std(yhat))
+        np.std(yhat),
+        time.time()-tt_runtime)
 
 
     print "Training complete: Time %s" %(time.time() - tt_run_time)

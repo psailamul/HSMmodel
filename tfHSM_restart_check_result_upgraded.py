@@ -11,7 +11,7 @@ from tensorflow.python import debug
 import time
 from visualization import *
 import sys
-
+from get_path import get_host_path
 
 def correlate_vectors(yhat_array, y_array):
   corrs = []      
@@ -67,7 +67,7 @@ def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False,ZOOM=Fa
       plt.plot(train_set[:,imin],'-ok')
       plt.plot(yhat[:,imin],'--or')
       plt.xlim((600,650))
-      plt.title('Code: %s\nCell#%d has max corr of %f'%(runcodestr,imin+1,np.min(corr)))
+      plt.title('Code: %s\nCell#%d has min corr of %f'%(runcodestr,imin+1,np.min(corr)))
       if(PLOT):
         plt.show()
 
@@ -126,6 +126,9 @@ def get_trials_seednum(fullpath):
   assert matching is not None
   seed_num = int(matching[0][4:])
   return trial_num, seed_num
+  
+def get_param_from_fname(fname, keyword):
+    return None
 
 SAVEFIG = True
 PLOT=True
@@ -138,14 +141,14 @@ def main(region_num='1', lr=1E-03, iterations=100000):
     if not os.path.isdir('Figures/'+date+'/') :
       os.mkdir('Figures/'+date+'/')
     Fig_fold='Figures/'+date+'/'
-
+  import ipdb; ipdb.set_trace()
   dt_stamp = re.split(
       '\.', str(datetime.now()))[0].\
       replace(' ', '_').replace(':', '_').replace('-', '_')
   
   current_path = os.getcwd()+'/'
   #data_dir = os.path.join(  "TFtrainingSummary/Region"+region_num+'/')
-  data_dir = os.path.join(  "TFtrainingSummary/LargeIterations_100k/")
+  data_dir = os.path.join(  "TFtrainingSummary/x7/")
 
   all_folders = os.listdir(current_path+data_dir)
   for sim_folder in all_folders:
@@ -170,7 +173,7 @@ def main(region_num='1', lr=1E-03, iterations=100000):
       fullpath = data_dir+sim_folder+fname
       npz_dat = np.load(fullpath)
         
-      trial_num, seed_num = get_trials_seednum(fullpath)
+      #trial_num, seed_num = get_trials_seednum(fullpath)
 
       for k in npz_dat:
           exec("{}".format(k)+"= npz_dat.f."+"{}".format(k))
@@ -198,19 +201,22 @@ def main(region_num='1', lr=1E-03, iterations=100000):
       fig_hist, ax = hist_of_pred_and_record_response(runcodestr,pred_act,responses,cell_id=np.argmax(corr),PLOT=PLOT)
 
       if SAVEFIG:
-        sim_code="Region%s_lr%.5f_itr%g_trial%g_seed%g"%(region_num,lr,iterations,trial_num,seed_num)
-        fig_train.savefig(Fig_fold+sim_code+"_TrainRec.png")
-        fig_max.savefig(Fig_fold+sim_code+"_MaxCorr.png")
-        fig_max_z.savefig(Fig_fold+sim_code+"_MaxCorrZoom.png")
-        fig_min.savefig(Fig_fold+sim_code+"_MinCorr.png")
-        fig_min_z.savefig(Fig_fold+sim_code+"_MinCorrZoom.png")
-        fig_hist.savefig(Fig_fold+sim_code+"_ResponseDist.png")
+        #sim_code="Region%s_lr%.5f_itr%g_trial%g_seed%g"%(region_num,lr,iterations,trial_num,seed_num)
+        if not (os.path.isdir(Fig_fold+sim_folder)):
+          os.mkdir(Fig_fold+sim_folder)
+        sim_code=fname[:-4]
+        fig_train.savefig(Fig_fold+sim_folder+sim_code+"_TrainRec.png")
+        fig_max.savefig(Fig_fold+sim_folder+sim_code+"_MaxCorr.png")
+        fig_max_z.savefig(Fig_fold+sim_folder+sim_code+"_MaxCorrZoom.png")
+        fig_min.savefig(Fig_fold+sim_folder+sim_code+"_MinCorr.png")
+        fig_min_z.savefig(Fig_fold+sim_folder+sim_code+"_MinCorrZoom.png")
+        fig_hist.savefig(Fig_fold+sim_folder+sim_code+"_ResponseDist.png")
 
       plt.close("all")      
       print "Saved: Time %s\n" %(time.time() - run_time)
 
 if __name__ == "__main__":
-  region_num='3'
+  region_num='1'
   tt_run_time = time.time()
   main(region_num=region_num)
   print "Finished Region"+region_num+ ": Time %s\n" %(time.time() - tt_run_time)
