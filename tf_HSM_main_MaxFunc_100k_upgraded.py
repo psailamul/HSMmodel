@@ -3,7 +3,6 @@ import tensorflow as tf
 import param
 from tf_HSM_upgraded import tf_HSM
 import os
-#os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 import matplotlib.pyplot as plt
 from datetime import datetime
 import re 
