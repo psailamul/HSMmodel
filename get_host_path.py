@@ -7,7 +7,7 @@ def get_host_path(HOST=False,PATH=True):
     else:
         raise Exception('Unknown Host : Please add your directory at get_path()')
     if(HOST&PATH):
-	return host,path
+        return host, path
     elif(HOST):
         return host
     else:

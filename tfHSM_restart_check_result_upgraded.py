@@ -11,7 +11,8 @@ from tensorflow.python import debug
 import time
 from visualization import *
 import sys
-from get_path import get_host_path
+from get_host_path import get_host_path
+
 
 def correlate_vectors(yhat_array, y_array):
   corrs = []      
@@ -128,12 +129,18 @@ def get_trials_seednum(fullpath):
   return trial_num, seed_num
   
 def get_param_from_fname(fname, keyword):
-    return None
+    cuts = re.split('_',fname)
+    for prm in cuts:
+        if str.startswith(prm,keyword):
+            return prm[len(keyword):]
+    else:
+        print "WARNING:: KEYWORD NOT FOUND"
+        return None
 
 SAVEFIG = True
 PLOT=True
 
-def main(region_num='1', lr=1E-03, iterations=100000):
+def main(region_num='1', lr=1E-03, iterations=1000):
     # Read file
   if SAVEFIG :
     date=str(datetime.now())
@@ -141,14 +148,13 @@ def main(region_num='1', lr=1E-03, iterations=100000):
     if not os.path.isdir('Figures/'+date+'/') :
       os.mkdir('Figures/'+date+'/')
     Fig_fold='Figures/'+date+'/'
-  import ipdb; ipdb.set_trace()
   dt_stamp = re.split(
       '\.', str(datetime.now()))[0].\
       replace(' ', '_').replace(':', '_').replace('-', '_')
   
   current_path = os.getcwd()+'/'
   #data_dir = os.path.join(  "TFtrainingSummary/Region"+region_num+'/')
-  data_dir = os.path.join(  "TFtrainingSummary/x7/")
+  data_dir = os.path.join(  "TFtrainingSummary/numIterations/")
 
   all_folders = os.listdir(current_path+data_dir)
   for sim_folder in all_folders:
@@ -159,17 +165,17 @@ def main(region_num='1', lr=1E-03, iterations=100000):
     print("------------------------------------------")
     print(sim_folder)
     print("------------------------------------------")
+    lr=float(get_param_from_fname(sim_folder, 'lr'))
+    iterations=int(get_param_from_fname(sim_folder, 'itr'))
     run_time = time.time()
     #sim_folder ="AntolikRegion1_lr0.00100_itr2500_2017_06_23_06_39_51/"
     for root, dirs, files in os.walk(directory): 
-
       # Look inside each folder
-      matching = [file for file in files if file.endswith('.npz')]
-      if matching is None:
+      try:
+        matching = [fl for fl in files if fl.endswith('.npz')]
+      except IndexError:
         continue
       fname=matching[0]
-      #import ipdb; ipdb.set_trace()
-      #fname = "TRdat_trained_HSM_3_trial50_seed50.npz"
       fullpath = data_dir+sim_folder+fname
       npz_dat = np.load(fullpath)
         

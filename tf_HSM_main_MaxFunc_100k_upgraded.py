@@ -10,15 +10,7 @@ from tensorflow.python import debug
 import time
 from visualization import *
 import sys
-
-def get_path():
-	import socket
-	if socket.gethostname() =='x7' :
-		return '/home/pachaya/HSMmodel/'
-	elif socket.gethostname() =='g13':
-		return '/home/pachaya/AntolikData/SourceCode/'
-	else:
-		raise Exception('Unknown Host : Please add your directory at get_path()')
+from get_host_path import get_host_path
 
 
 # CUDA_VISIBLE_DEVICES=2 python tf_HSM_main_MaxFunc_100k_upgraded.py RESTART_TRIAL=3 SEED=3 LR=1e-3 ITERATIONS=100000
@@ -65,15 +57,12 @@ def main():
     #########################################################################
     # Simulation Config
     ########################################################################
-    
-    REGION =1; RESTART_TRIAL=0; SEED =0; ITERATIONS=100000; LR = 1e-2; NUM_LGN=9; HLSR=0.2;
-    
+    REGION =1; RESTART_TRIAL=0; SEED =0; ITERATIONS=1000; LR = 1e-3; NUM_LGN=9; HLSR=0.2;
     if len(sys.argv) > 1:
         for ii in range(1,len(sys.argv)):
             arg = sys.argv[ii]
             print(arg)
             exec(arg) 
-    #GPUcode='/gpu:%g'%(GPU_ID)
     tf.set_random_seed(SEED)
     print('SEED : %g'%(SEED))
     tt_run_time = time.time()
@@ -81,7 +70,7 @@ def main():
     dt_stamp = re.split(
             '\.', str(datetime.now()))[0].\
             replace(' ', '_').replace(':', '_').replace('-', '_')
-            
+    HOST, PATH = get_host_path(HOST=True, PATH=True)
     region_num = str(REGION)
     num_lgn=NUM_LGN; hlsr=HLSR
     lr = LR
@@ -90,17 +79,14 @@ def main():
     SAVEdat = True
     VISUALIZE = False
     PLOT_CORR_STATS =False
-    #runcodestr ="#LGN=%g HLSR=%.5f Restart# %g"%(NUM_LGN, HLSR, RESTART_TRIAL)
-    runcodestr ="Machine: g13 LR: %.5f Iterations: %g Restart#: %g"%(lr, iterations, RESTART_TRIAL)
-
-    
+    runcodestr ="Machine: %s Region: %s LR: %.5f Iterations: %g Restart#: %g"%(HOST,region_num, lr, iterations, RESTART_TRIAL)
+    SAVER_SAVE = int(iterations/10.0)
     CONFIG={'region_num':region_num,
     'runcodestr':runcodestr,
     'NORM_RESPONSE':NORM_RESPONSE,
     'SAVEdat':SAVEdat,
     'VISUALIZE':VISUALIZE,
     'PLOT_CORR_STATS':PLOT_CORR_STATS,
-    #'GPU_ID' :GPU_ID,
     'RESTART_TRIAL':RESTART_TRIAL,
     'SEED':SEED,
     'ITERATIONS':ITERATIONS,
@@ -109,9 +95,7 @@ def main():
     'HLSR':HLSR
     }
     
-    ########################################################################
-    PATH=get_path()
-    SUMMARY_DIR = 'TFtrainingSummary/'
+    SUMMARY_DIR = 'TFtrainingSummary/numIterations/'
     #import ipdb; ipdb.set_trace()
     # Download data from a region
     train_input=np.load(PATH + 'Data/region' + region_num+'/training_inputs.npy')
@@ -167,7 +151,7 @@ def main():
 
     loss_list, activation_summary_lgn, activation_summary_l1, yhat_std, MSE_list, corr_list = [], [], [], [], [],[]
     
-    summary_fname = "trainedHSM__region"+region_num+"_trial%g"%(RESTART_TRIAL)
+    summary_fname = "trainedHSM_region"+region_num+"_trial%g"%(RESTART_TRIAL)
     
     for idx in range(iterations):
       itr_time=time.time()
@@ -184,7 +168,10 @@ def main():
       activation_summary_lgn += [np.mean(lgn_response)]
       activation_summary_l1 += [np.mean(l1_response)]
       yhat_std += [np.std(yhat)]
-      if idx % 10000 == 0:
+      if idx % SAVER_SAVE == 0:
+        print("=================================================")
+        print "  CODE :: " + runcodestr
+        print("=================================================")
         saver.save(sess, '%s/%s'%(summary_dir,summary_fname),global_step=idx)
       if(idx==0):
         yhat_1st = yhat
@@ -199,10 +186,8 @@ def main():
         np.std(yhat),
         time.time()-itr_time,
         time.time()-tt_run_time)
-
-
-    print "Training complete: Time %s" %(time.time() - tt_runtime)
-
+        
+    print "Training complete: Time %s" %(time.time() - tt_run_time)
     #save
     if(SAVEdat):
         np.savez('%s/TRdat_%s.npz'%(summary_dir,summary_fname), 
@@ -219,8 +204,6 @@ def main():
          TR_1st_l1_response=l1_response_1st,
          TR_1st_lgn_response=lgn_response_1st,
          CONFIG=CONFIG)
-    
-    
     # check the training
     if(VISUALIZE):
         itr_idx = range(iterations)
@@ -265,8 +248,11 @@ def main():
         corr[np.isnan(corr)]=0.0
         plot_act_of_max_min_corr(pred_act,responses,corr)
         hist_of_pred_and_record_response(pred_act,responses,cell_id=np.argmax(corr))
-    print('Finished everything\n Code::%s\n save at:: %s \n Time =%s '%(runcodestr,summary_fname,time.time() - tt_run_time))
-    import ipdb; ipdb.set_trace()
+    print("####################################################")
+    for cf in CONFIG :
+        print  cf +" = " + str(CONFIG[cf])
+    print('Finished everything\n Code::  %s\n Time::  %s '%(runcodestr, time.time() - tt_run_time))
+
 if __name__ == "__main__":
     main()
 
