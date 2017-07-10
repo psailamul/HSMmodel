@@ -6,8 +6,6 @@ from HSM import HSM
 from visualization import *
 
 
-	
-
 download_time = time.time() #print "Download complete: Time %s" %(time.time() - download_time)
 train_input1=np.load('/home/pachaya/AntolikData/SourceCode/Data/region1/training_inputs.npy')
 train_set1=np.load('/home/pachaya/AntolikData/SourceCode/Data/region1/training_set.npy')
@@ -34,7 +32,7 @@ vld_set3 = np.load('/home/pachaya/AntolikData/SourceCode/Data/region3/validation
 #out = fitHSM(r1_train_input,r1_train_set)
 
 
-import ipdb; ipdb.set_trace()
+#import ipdb; ipdb.set_trace()
 
 [Ks1,hsm1] = np.load('out_region1.npy')
 [Ks2,hsm2] = np.load('out_region2.npy')
@@ -74,18 +72,46 @@ vld_corr3 = computeCorr(pred_response3,vld_set3)
 #(train_c, val_c) = printCorrelationAnalysis(act,val_act,pred_act,pred_val_act):
 
 # Max corr neurons
-imax = np.argmax(vld_corr1) # note : actually have to combine neurons in all regions
+imax1 = np.argmax(vld_corr1) # note : actually have to combine neurons in all regions
+imax2 = np.argmax(vld_corr2)
+imax3 = np.argmax(vld_corr3)
 
-plt.plot(vld_set1[:,imax],'-ok')
-plt.plot(pred_response1[:,imax],'--or')
-plt.title('Cell#%d has max corr of %f'%(imax+1,np.max(vld_corr1)))
+ax1=plt.subplot(311)
+ax1.plot(vld_set1[:,imax1],'-ok')
+ax1.plot(pred_response1[:,imax1],'--or')
+ax1.title('Region 1 : Cell#%d has max corr of %f'%(imax1+1,np.max(vld_corr1)))
+ax1.set_ylim([0, 6])
+
+ax2=plt.subplot(312)
+ax2.plot(vld_set2[:,imax2],'-ok')
+ax2.plot(pred_response2[:,imax2],'--or')
+ax2.title('Region 2 : Cell#%d has max corr of %f'%(imax2+1,np.max(vld_corr2)))
+ax2.set_ylim([0, 6])
+
+ax3=plt.subplot(313)
+ax3.plot(vld_set3[:,imax3],'-ok')
+ax3.plot(pred_response3[:,imax3],'--or')
+ax3.title('Region 3 : Cell#%d has max corr of %f'%(imax3+1,np.max(vld_corr3)))
+ax3.set_ylim([0, 6])
+
 plt.show()
 
-imin = np.argmin(vld_corr1) # note : actually have to combine neurons in all regions
+imin1 = np.argmin(vld_corr1) # note : actually have to combine neurons in all regions
+imin2 = np.argmin(vld_corr2) # note : actually have to combine neurons in all regions
+imin3 = np.argmin(vld_corr3) # note : actually have to combine neurons in all regions
 
-plt.plot(vld_set1[:,imin],'-ok')
-plt.plot(pred_response1[:,imin],'--or')
-plt.title('Cell#%d has min corr of %f'%(imin+1,np.min(vld_corr1)))
+plt.subplot(311)
+plt.plot(vld_set1[:,imin1],'-ok')
+plt.plot(pred_response1[:,imin1],'--or')
+plt.title('Region 1 :Cell#%d has min corr of %f'%(imin1+1,np.min(vld_corr1)))
+plt.subplot(312)
+plt.plot(vld_set2[:,imin2],'-ok')
+plt.plot(pred_response2[:,imin2],'--or')
+plt.title('Region 2 :Cell#%d has min corr of %f'%(imin2+1,np.min(vld_corr2)))
+plt.subplot(313)
+plt.plot(vld_set3[:,imin3],'-ok')
+plt.plot(pred_response3[:,imin3],'--or')
+plt.title('Region 3 :Cell#%d has min corr of %f'%(imin3+1,np.min(vld_corr3)))
 plt.show()
 
 """

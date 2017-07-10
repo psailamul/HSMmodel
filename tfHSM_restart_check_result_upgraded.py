@@ -158,24 +158,29 @@ def main(region_num='1', lr=1E-03, iterations=1000):
 
   all_folders = os.listdir(current_path+data_dir)
   for sim_folder in all_folders:
-    if not str.startswith(sim_folder,'AntolikRegion'+region_num):
+    fixed_param='_lr0.10000_itr1e+06'
+    if not str.startswith(sim_folder,'AntolikRegion'+region_num+fixed_param):
       continue
     sim_folder+='/'
     directory = current_path+data_dir+sim_folder
     print("------------------------------------------")
     print(sim_folder)
     print("------------------------------------------")
-    lr=float(get_param_from_fname(sim_folder, 'lr'))
-    iterations=int(get_param_from_fname(sim_folder, 'itr'))
+    lr_str=get_param_from_fname(sim_folder, 'lr'); lr=float(lr_str)
+    itr_str=get_param_from_fname(sim_folder, 'itr'); 
+    iterations=int(float(itr_str))
     run_time = time.time()
     #sim_folder ="AntolikRegion1_lr0.00100_itr2500_2017_06_23_06_39_51/"
     for root, dirs, files in os.walk(directory): 
       # Look inside each folder
+      matching = None
+      matching = [fl for fl in files if fl.endswith('.npz')]
+      if matching == None:
+        continue
       try:
-        matching = [fl for fl in files if fl.endswith('.npz')]
+        fname=matching[0]
       except IndexError:
         continue
-      fname=matching[0]
       fullpath = data_dir+sim_folder+fname
       npz_dat = np.load(fullpath)
         
