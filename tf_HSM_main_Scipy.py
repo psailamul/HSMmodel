@@ -188,15 +188,17 @@ https://github.com/tensorflow/tensorflow/blob/r1.2/tensorflow/contrib/opt/python
     #loss_value, score_value, yhat, l1_response, lgn_response=train_op.minimize(sess, fetches=[loss, score, pred_neural_response, l1, lgn_out],
      #   feed_dict={images: train_input, neural_response: train_set})
 
-    Ks,success,c =train_op.minimize(sess, fetches=[score, pred_neural_response, l1, lgn_out],
+    train_op.minimize(sess, fetches=[score, pred_neural_response, l1, lgn_out],
         feed_dict={images: train_input, neural_response: train_set})
       #_, loss_value, score_value, yhat, l1_response, lgn_response = sess.run(
       #  [train_op, loss, score, pred_neural_response, l1, lgn_out],
       #  feed_dict={images: train_input, neural_response: train_set})
     import ipdb; ipdb.set_trace()
-    #loss_value=loss.eval(); score_value=score.eval(); yhat=pred_neural_response.eval(); l1_response=l1.eval(); lgn_response=lgn_out.eval();
-    #corr=computeCorr(yhat, train_set)
-    
+    #with sess.as_default():
+      #loss_value=loss.eval(); score_value=score.eval(); yhat=pred_neural_response.eval(); l1_response=l1.eval(); lgn_response=lgn_out.eval();
+    loss_value=loss; score_value=score; yhat=pred_neural_response; l1_response=l1; lgn_response=lgn_out
+
+    #corr=computeCorr(yhat, train_set)    
     corr=correlate_vectors(yhat, train_set)
     corr[np.isnan(corr)]=0.0
     it_corr = np.mean(corr)
