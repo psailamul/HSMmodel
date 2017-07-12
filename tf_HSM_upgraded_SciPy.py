@@ -42,6 +42,7 @@ class tf_HSM():
       self.UNIFORM_Threshold_init = tf.random_uniform_initializer(L,U)
       self.LGN_params={}
       self.bounds = {}
+      self.bound_list=[]
 
     def construct_free_params(self):
       # LGN initialization
@@ -81,7 +82,13 @@ class tf_HSM():
       #checkbounds = lambda val, lower_bound, upper_bound : tf.minimum(tf.maximum(val,lower_bound), upper_bound)
       #self.hidden_w =checkbounds(self.hidden_w,-10,10); self.hl_tresh = checkbounds(self.hl_tresh,0,10);
       #self.output_w =checkbounds(self.output_w,-10,10); self.ol_tresh = checkbounds(self.ol_tresh,0,10);
-    
+    def get_bounds(self):
+      bound_list=[]
+      for bb in self.bounds:
+        bound_list.append(self.bounds[bb])
+      self.bound_list=bound_list
+
+
     def DoG(self, x, y, sc, ss, rc, rs):
       # Passing the parameters for a LGN neuron
       #import ipdb; ipdb.set_trace()
@@ -91,9 +98,9 @@ class tf_HSM():
       checkbounds = lambda val, lower_bound, upper_bound : tf.minimum(tf.maximum(val,lower_bound), upper_bound)
       #actually, I would prefer resampling over max/min values
 
-      x = checkbounds(x,0.0,self.img_size); y = checkbounds(y,0.0,self.img_size)
-      sc =checkbounds(x,0.1,self.img_size); ss = checkbounds(y,0.0,self.img_size)
-      rc=checkbounds(x,0.0,10.0); rs = checkbounds(y,0.0,10.0)
+      #x = checkbounds(x,0.0,self.img_size); y = checkbounds(y,0.0,self.img_size)
+      #sc =checkbounds(x,0.1,self.img_size); ss = checkbounds(y,0.0,self.img_size)
+      #rc=checkbounds(x,0.0,10.0); rs = checkbounds(y,0.0,10.0)
 
       pi = tf.constant(np.pi)
       pos = ((self.grid_xx - x)**2 + (self.grid_yy - y)**2)
@@ -162,22 +169,17 @@ class tf_HSM():
       
       # Run MLP
       checklowerbounds = lambda val, lower_bound : tf.maximum(val,lower_bound)
-      self.hl_tresh = checklowerbounds(self.hl_tresh,0.0)
-      self.ol_tresh= checklowerbounds(self.ol_tresh,0.0)
+      #self.hl_tresh = checklowerbounds(self.hl_tresh,0.0)
+      #self.ol_tresh= checklowerbounds(self.ol_tresh,0.0)
 
       self.l1 = self.activation(tf.matmul(self.lgn_out, self.hidden_w), self.hl_tresh) #RELU that shift
       self.output = self.activation(tf.matmul(self.l1, self.output_w), self.ol_tresh)
       
       self.LGN_params={'x_pos':self.lgn_x, 'y_pos':self.lgn_y, 'lgn_sc':self.lgn_sc, 'lgn_ss':self.lgn_ss, 'lgn_rc':self.lgn_rc, 'lgn_rs':self.lgn_rs}
-      
+      self.get_bounds()
       
       return self.output, self.l1, self.lgn_out
-      def get_bounds(self):
-        bound_list=[]
-        for bb in self.bounds:
-          bound_list.append(self.bounds[bb])
-        return bound_list
-        #return self.bounds
+
         
       def der_all(self):
         return tf.grad(self.output, tf.trainable_variables())

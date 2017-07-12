@@ -79,19 +79,19 @@ imax3 = np.argmax(vld_corr3)
 ax1=plt.subplot(311)
 ax1.plot(vld_set1[:,imax1],'-ok')
 ax1.plot(pred_response1[:,imax1],'--or')
-ax1.title('Region 1 : Cell#%d has max corr of %f'%(imax1+1,np.max(vld_corr1)))
+ax1.set_title('Region 1 : Cell#%d has max corr of %f'%(imax1+1,np.max(vld_corr1)))
 ax1.set_ylim([0, 6])
 
 ax2=plt.subplot(312)
 ax2.plot(vld_set2[:,imax2],'-ok')
 ax2.plot(pred_response2[:,imax2],'--or')
-ax2.title('Region 2 : Cell#%d has max corr of %f'%(imax2+1,np.max(vld_corr2)))
+ax2.set_title('Region 2 : Cell#%d has max corr of %f'%(imax2+1,np.max(vld_corr2)))
 ax2.set_ylim([0, 6])
 
 ax3=plt.subplot(313)
 ax3.plot(vld_set3[:,imax3],'-ok')
 ax3.plot(pred_response3[:,imax3],'--or')
-ax3.title('Region 3 : Cell#%d has max corr of %f'%(imax3+1,np.max(vld_corr3)))
+ax3.set_title('Region 3 : Cell#%d has max corr of %f'%(imax3+1,np.max(vld_corr3)))
 ax3.set_ylim([0, 6])
 
 plt.show()
@@ -100,18 +100,21 @@ imin1 = np.argmin(vld_corr1) # note : actually have to combine neurons in all re
 imin2 = np.argmin(vld_corr2) # note : actually have to combine neurons in all regions
 imin3 = np.argmin(vld_corr3) # note : actually have to combine neurons in all regions
 
-plt.subplot(311)
-plt.plot(vld_set1[:,imin1],'-ok')
-plt.plot(pred_response1[:,imin1],'--or')
-plt.title('Region 1 :Cell#%d has min corr of %f'%(imin1+1,np.min(vld_corr1)))
-plt.subplot(312)
-plt.plot(vld_set2[:,imin2],'-ok')
-plt.plot(pred_response2[:,imin2],'--or')
-plt.title('Region 2 :Cell#%d has min corr of %f'%(imin2+1,np.min(vld_corr2)))
-plt.subplot(313)
-plt.plot(vld_set3[:,imin3],'-ok')
-plt.plot(pred_response3[:,imin3],'--or')
-plt.title('Region 3 :Cell#%d has min corr of %f'%(imin3+1,np.min(vld_corr3)))
+ax1=plt.subplot(311)
+ax1.plot(vld_set1[:,imin1],'-ok')
+ax1.plot(pred_response1[:,imin1],'--or')
+ax1.set_title('Region 1 :Cell#%d has min corr of %f'%(imin1+1,np.min(vld_corr1)))
+
+ax2 = plt.subplot(312)
+ax2.plot(vld_set2[:,imin2],'-ok')
+ax2.plot(pred_response2[:,imin2],'--or')
+ax2.set_title('Region 2 :Cell#%d has min corr of %f'%(imin2+1,np.min(vld_corr2)))
+
+ax3=plt.subplot(313)
+ax3.plot(vld_set3[:,imin3],'-ok')
+ax3.plot(pred_response3[:,imin3],'--or')
+ax3.set_title('Region 3 :Cell#%d has min corr of %f'%(imin3+1,np.min(vld_corr3)))
+
 plt.show()
 
 """
