@@ -47,6 +47,7 @@ for i in range(num_region):
 
 
 from funcs_for_graphs import *
+compare_corr_all_regions(pred_train_response,train_set, corr, stats_param='median', titletxt='Training Set')
 compare_corr_all_regions(pred_vld_response,vld_set, vld_corr, stats_param='median', titletxt='Validation Set')
 
 compare_corr_all_regions(pred_train_response,train_set, corr, stats_param='max', titletxt='Training Set')

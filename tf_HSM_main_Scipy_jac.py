@@ -102,7 +102,7 @@ def main():
     NORM_RESPONSE = False
     SAVEdat = True
     VISUALIZE = True
-    PLOT_CORR_STATS =False
+    PLOT_CORR_STATS =True
     runcodestr ="Machine: %s Region: %s max iter: %g Iterations: %g Restart#: %g"%(HOST,region_num, MAXITER, iterations, RESTART_TRIAL)
     #SAVER_SAVE = int(iterations/10.0)
     #SAVER_SAVE = np.max(1,SAVER_SAVE)
@@ -122,11 +122,15 @@ def main():
     'MAXITER':MAXITER
     }
     
-    SUMMARY_DIR = 'TFtrainingSummary/SciPy_maxiter/'
+    SUMMARY_DIR = 'TFtrainingSummary/SciPy_maxiter_grad/'
     #import ipdb; ipdb.set_trace()
     # Download data from a region
     train_input=np.load(PATH + 'Data/region' + region_num+'/training_inputs.npy')
     train_set=np.load(PATH + 'Data/region' + region_num+'/training_set.npy')
+    
+    raw_vld_set = np.load(PATH + 'Data/region' + region_num+'/raw_validation_set.npy')
+    vldinput_set = np.load(PATH + 'Data/region' + region_num+'/validation_inputs.npy')
+    vld_set = np.load(PATH + 'Data/region' + region_num+'/validation_set.npy')
 
     if(NORM_RESPONSE):
         train_set = train_set/(train_set.max()-train_set.min())
@@ -154,10 +158,9 @@ def main():
         # Optimize loss
         bounds_list = create_bound_list(hsm.bounds, num_lgn=num_lgn, hlsr=hlsr, num_neuron=num_neuron)
         #x0=create_x0(bounds_list, SEED=SEED) #initial_val=x0
-        #train_op = tf.train.AdamOptimizer(lr).minimize(loss)
-        train_op=ScipyOptimizerInterface(loss, var_list=tf.trainable_variables(), method='TNC', bounds=bounds_list ,options={'maxiter': MAXITER, 'disp':True}) #, 'maxCGit':5}) 
-        #train_op=ScipyOptimizerInterface(loss, method='L-BFGS-B', bounds=bounds_list, options={'maxiter': 1000, 'disp':True}) 
-        #train_op=ScipyOptimizerInterface(loss, options={'maxiter': 100, 'disp':True}) 
+
+        train_op=ScipyOptimizerInterface(loss, var_list=tf.trainable_variables(), method='TNC', bounds=bounds_list, jac=hsm.der_all() ,options={'maxiter': MAXITER, 'disp':True}) #, 'maxCGit':5}) 
+
         # Track correlation between YY_hat and YY    
         score = tf.nn.l2_loss(pred_neural_response - neural_response)
         
@@ -178,9 +181,8 @@ def main():
     # Need to initialize both of these if supplying num_epochs to inputs
     sess.run(tf.group(tf.global_variables_initializer(),
      tf.local_variables_initializer()))
-    
-    #train_op.minimize(sess)
-    summary_dir = os.path.join(SUMMARY_DIR+"AntolikRegion%s_noMaxCGit_MaxIter%g_itr%g_SEED%g_%s"%(region_num,MAXITER,iterations,SEED,dt_stamp))
+    Code='SciPy_jac'
+    summary_dir = os.path.join(SUMMARY_DIR+"AntolikRegion%s_%s_MaxIter%g_itr%g_SEED%g_%s"%(region_num,Code, MAXITER,iterations,SEED,dt_stamp))
     summary_writer = tf.summary.FileWriter(summary_dir, sess.graph)
 
 
@@ -199,16 +201,12 @@ https://github.com/tensorflow/tensorflow/blob/r1.2/tensorflow/contrib/opt/python
     for idx in range(iterations):
         #import ipdb; ipdb.set_trace()
       itr_time=time.time()
-      #import ipdb; ipdb.set_trace()
-      #loss_value, score_value, yhat, l1_response, lgn_response=train_op.minimize(sess, fetches=[loss, score, pred_neural_response, l1, lgn_out],
-       #   feed_dict={images: train_input, neural_response: train_set})
-      train_op=ScipyOptimizerInterface(loss, var_list=tf.trainable_variables(), method='TNC', bounds=bounds_list, options={'maxiter': MAXITER, 'disp':True}) #, 'maxCGit':5}) 
+
+      train_op=ScipyOptimizerInterface(loss, var_list=tf.trainable_variables(), method='TNC', bounds=bounds_list, jac=hsm.der_all(), options={'maxiter': MAXITER, 'disp':True}) #, 'maxCGit':5}) 
       train_op.minimize(sess, fetches=[loss, score, pred_neural_response, l1, lgn_out],
           feed_dict={images: train_input, neural_response: train_set})
-        #_, loss_value, score_value, yhat, l1_response, lgn_response = sess.run(
-        #  [train_op, loss, score, pred_neural_response, l1, lgn_out],
-        #  feed_dict={images: train_input, neural_response: train_set})
-      #import ipdb; ipdb.set_trace()
+
+      import ipdb; ipdb.set_trace()
 
 
       loss_value=sess.run(loss, feed_dict={images: train_input, neural_response: train_set}); 
@@ -216,8 +214,7 @@ https://github.com/tensorflow/tensorflow/blob/r1.2/tensorflow/contrib/opt/python
       yhat=sess.run(pred_neural_response,feed_dict={images: train_input, neural_response: train_set}); 
       l1_response=sess.run(l1,feed_dict={images: train_input, neural_response: train_set}); 
       lgn_response=sess.run(lgn_out,feed_dict={images: train_input, neural_response: train_set})
-
-
+      y_vld=sess.run(pred_neural_response,feed_dict={images: vldinput_set, neural_response: vld_set}); 
 
       corr=computeCorr(yhat, train_set)    
       #corr=correlate_vectors(yhat, train_set)
@@ -238,6 +235,7 @@ https://github.com/tensorflow/tensorflow/blob/r1.2/tensorflow/contrib/opt/python
         yhat_1st = yhat
         l1_response_1st=l1_response
         lgn_response_1st=lgn_response
+        y_vld_1st=y_vld
       print 'Iteration: %s | LOSS: %f | MSE: %f | Corr: %.5f |STD of yhat: %.5f\n Time ::: %s    Time since start::: %s' % (
           idx,
           loss_value,
@@ -264,6 +262,8 @@ https://github.com/tensorflow/tensorflow/blob/r1.2/tensorflow/contrib/opt/python
          TR_1st_pred_response=yhat_1st,
          TR_1st_l1_response=l1_response_1st,
          TR_1st_lgn_response=lgn_response_1st,
+         VLD_1st_ypredict=y_vld_1st,
+         VLD_ypredict=y_vld,
          CONFIG=CONFIG)
     # check the training
     if(VISUALIZE):
@@ -306,6 +306,14 @@ https://github.com/tensorflow/tensorflow/blob/r1.2/tensorflow/contrib/opt/python
         #hist_of_pred_and_record_response(pred_act,responses)
 
         corr = computeCorr(yhat, train_set)
+        corr[np.isnan(corr)]=0.0
+        plot_act_of_max_min_corr(pred_act,responses,corr)
+        hist_of_pred_and_record_response(pred_act,responses,cell_id=np.argmax(corr))
+        
+        pred_act = y_vld; responses = vld_set
+        #hist_of_pred_and_record_response(pred_act,responses)
+
+        corr = computeCorr(pred_act, responses)
         corr[np.isnan(corr)]=0.0
         plot_act_of_max_min_corr(pred_act,responses,corr)
         hist_of_pred_and_record_response(pred_act,responses,cell_id=np.argmax(corr))

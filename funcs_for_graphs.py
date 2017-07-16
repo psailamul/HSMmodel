@@ -76,17 +76,17 @@ def  compare_corr_all_regions(pred_response,vld_set, corr_set, stats_param='max'
     ax1=plt.subplot(3,1,1)
     ax1.plot(vld_set['1'][:,idx1],'-ok')
     ax1.plot(pred_response['1'][:, idx1],'--or')
-    ax1.set_title('Cell#%g is the %s  neuron in region 1, R = %.5f'%(idx1+1 ,stats_param,stat1))
+    ax1.set_title('Cell#%g is the %s  neuron in region 1, R = %.5f, mean neuron has R = %.5f'%(idx1+1 ,stats_param,stat1, np.mean(corr1)))
 
     ax2=plt.subplot(3,1,2)
     ax2.plot(vld_set['2'][:,idx2],'-ok')
     ax2.plot(pred_response['2'][:, idx2],'--or')
-    ax2.set_title('Cell#%g is the %s neuron in region 2, R = %.5f'%(idx2+1 ,stats_param,stat2))
+    ax2.set_title('Cell#%g is the %s neuron in region 2, R = %.5f, mean neuron has R = %.5f'%(idx2+1 ,stats_param,stat2, np.mean(corr2)))
     
     ax3=plt.subplot(3,1,3)
     ax3.plot(vld_set['3'][:,idx3],'-ok')
     ax3.plot(pred_response['3'][:, idx3],'--or')
-    ax3.set_title("Cell#%g is the %s neuron in region 3, R = %.5f"%(idx3+1 ,stats_param,stat3))
+    ax3.set_title("Cell#%g is the %s neuron in region 3, R = %.5f, mean neuron has R = %.5f"%(idx3+1 ,stats_param,stat3, np.mean(corr3)))
     report_txt="Overall mean corr = %.4f, best neuron has corr = %.4f, median neuron=%.4f"%(combine_corr.mean(), 
         combine_corr.max(), np.median(combine_corr))
             

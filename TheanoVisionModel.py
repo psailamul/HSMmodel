@@ -132,7 +132,6 @@ class TheanoVisionModel(param.Parameterized):
             response of the first derivative of the model to the training set stored in self.X as output.
             """
             g_K = T.grad(self.model, self.K) #T.grad(scalar cost, variable to compute gradient)
-            import ipdb; ipdb.set_trace()
             return theano.function(inputs=[self.K], outputs=g_K,mode='FAST_RUN')
 
         def response(self,X,kernel):

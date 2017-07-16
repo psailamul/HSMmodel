@@ -43,6 +43,7 @@ class tf_HSM():
       self.LGN_params={}
       self.bounds = {}
       self.bound_list=[]
+      self.der=None
 
     def construct_free_params(self):
       # LGN initialization
@@ -83,7 +84,7 @@ class tf_HSM():
       #self.hidden_w =checkbounds(self.hidden_w,-10,10); self.hl_tresh = checkbounds(self.hl_tresh,0,10);
       #self.output_w =checkbounds(self.output_w,-10,10); self.ol_tresh = checkbounds(self.ol_tresh,0,10);
     def get_bounds(self):
-      bound_list=[]
+      bound_list=[] #This function can be deleted
       for bb in self.bounds:
         bound_list.append(self.bounds[bb])
       self.bound_list=bound_list
@@ -135,6 +136,9 @@ class tf_HSM():
     
     def cond(self, i, x, y, sc, ss, rc, rs):
       return i < self.num_lgn[0]  
+   
+    def der_all(self):
+      return tf.gradients(self.output, tf.trainable_variables())
 
     def build(self, data, label):
       get_bounds_for_init = lambda lo, up:  [lo + (up-lo)/4.0 , lo + (up-lo)/4.0 + (up-lo)/2.0]
@@ -177,9 +181,7 @@ class tf_HSM():
       
       self.LGN_params={'x_pos':self.lgn_x, 'y_pos':self.lgn_y, 'lgn_sc':self.lgn_sc, 'lgn_ss':self.lgn_ss, 'lgn_rc':self.lgn_rc, 'lgn_rs':self.lgn_rs}
       self.get_bounds()
-      
+      self.der=self.der_all()
       return self.output, self.l1, self.lgn_out
 
-        
-      def der_all(self):
-        return tf.grad(self.output, tf.trainable_variables())
+

@@ -1,6 +1,6 @@
 from HSM import HSM
 import numpy
-from scipy.optimize import fmin_tnc
+from scipy.optimize import minimize
 import param
 
 import numpy as np
@@ -13,15 +13,10 @@ download_time = time.time()
 training_inputs=np.load('/home/pachaya/AntolikData/SourceCode/Data/region1/training_inputs.npy')
 training_set=np.load('/home/pachaya/AntolikData/SourceCode/Data/region1/training_set.npy')
 print "Download complete: Time %s" %(time.time() - download_time)
-
-
-
 call_time = time.time()
-
 seed=13; lgn=9; hlsr=0.2
-
-num_pres,num_neurons = numpy.shape(training_set)
 import ipdb; ipdb.set_trace()
+num_pres,num_neurons = numpy.shape(training_set)
 print "Creating HSM model"
 hsm = HSM(training_inputs,training_set) # Initialize model --> add input and output, construct parameters , build mobel, # create loss function
 print "Created HSM model"   
@@ -31,16 +26,16 @@ hsm.hlsr = hlsr
 func = hsm.func() 
 import ipdb; ipdb.set_trace()
 Ks = hsm.create_random_parametrization(seed) # set initial random values of the model parameter vector
-import ipdb; ipdb.set_trace()
+
 MAXITER=100000
-Code='SciPy_fmin'
+Code='SciPytestSeed'
 HOST, PATH = get_host_path(HOST=True, PATH=True)
-SUMMARY_DIR = 'TFtrainingSummary/SciPy_maxiter_grad/'
-
-#(Ks,success,c)=fmin_tnc(func ,Ks,fprime=hsm.der(),bounds=hsm.bounsd,maxfun = 100000,messages=0)  # https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.optimize.fmin_tnc.html
-(Ks,success,c)=fmin_tnc(func ,Ks,fprime=hsm.der(),bounds=hsm.bounds,maxfun = MAXITER,disp=5)
-
-out = (Ks,hsm)
+#SUMMARY_DIR = 'TFtrainingSummary/SciPy_maxiter_grad/'
+SUMMARY_DIR = 'TFtrainingSummary/SciPy_SEEDnumpy/'
+#c(Ks,success,c)=fmin_tnc(func ,Ks,fprime=hsm.der(),bounds=hsm.bounsd,maxfun = 100000,messages=0)  # https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.optimize.fmin_tnc.html
+out=minimize(func ,Ks,method='TNC',jac=hsm.der(),bounds=hsm.bounds,options={'maxiter':MAXITER,'disp':True})
+import ipdb; ipdb.set_trace()
+Ks=out.x
 np.save("%sHSMout_theano_%s_MaxIter%g_seed%g.npy"%(SUMMARY_DIR,Code,MAXITER,seed),out)
 print "Saved"
 

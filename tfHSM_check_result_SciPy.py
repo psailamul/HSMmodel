@@ -76,7 +76,7 @@ def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False,ZOOM=Fa
     return fig_max, fig_max_z, fig_min, fig_min_z
 
         # check the training
-def plot_training_behav(runcodestr,loss_list,MSE_list,corr_list,activation_summary_lgn,activation_summary_l1,yhat_std,lr=1E-03,iterations=2500,PLOT=False):
+def plot_training_behav(runcodestr,loss_list,MSE_list,corr_list,activation_summary_lgn,activation_summary_l1,yhat_std,MAXITER,iterations=2500,PLOT=False):
     itr_idx = range(iterations)
 
     fig,ax = plt.subplots(figsize=(16,12))
@@ -110,7 +110,7 @@ def plot_training_behav(runcodestr,loss_list,MSE_list,corr_list,activation_summa
     plt.title('std of predicted response')
     plt.xlabel('iterations')
 
-    plt.suptitle("Code: %s lr=%.5f , itr = %g\n[%s]"%(runcodestr,lr,iterations,str(datetime.now())))
+    plt.suptitle("Code: %s max iter=%g , itr = %g\n[%s]"%(runcodestr,MAXITER,iterations,str(datetime.now())))
     
     if(PLOT):
         plt.show()
@@ -140,8 +140,8 @@ def get_param_from_fname(fname, keyword):
 SAVEFIG = True
 PLOT=True
 
-def main(region_num='1', lr=1E-03, iterations=10):
-    # Read file
+def main(region_num='1', lr=1E-03, iterations=10,MAXITER=10000):
+  # Read file
   if SAVEFIG :
     date=str(datetime.now())
     date = date[:10]
@@ -154,11 +154,11 @@ def main(region_num='1', lr=1E-03, iterations=10):
   
   current_path = os.getcwd()+'/'
   #data_dir = os.path.join(  "TFtrainingSummary/Region"+region_num+'/')
-  data_dir = os.path.join(  "TFtrainingSummary/SciPy/")
+  data_dir = os.path.join(  "TFtrainingSummary/SciPy_maxiter_grad/")
 
   all_folders = os.listdir(current_path+data_dir)
   for sim_folder in all_folders:
-    fixed_param='' #'_lr0.10000_itr1e+06'
+    fixed_param='_noMaxCGit' #'_lr0.10000_itr1e+06'
     if not str.startswith(sim_folder,'AntolikRegion'+region_num+fixed_param):
       continue
     sim_folder+='/'
@@ -166,8 +166,9 @@ def main(region_num='1', lr=1E-03, iterations=10):
     print("------------------------------------------")
     print(sim_folder)
     print("------------------------------------------")
-    lr_str=get_param_from_fname(sim_folder, 'lr'); lr=float(lr_str)
+    #lr_str=get_param_from_fname(sim_folder, 'lr'); lr=float(lr_str)
     itr_str=get_param_from_fname(sim_folder, 'itr'); 
+    maxiter_str=get_param_from_fname(sim_folder, 'MaxIter'); 
     iterations=int(float(itr_str))
     run_time = time.time()
     #sim_folder ="AntolikRegion1_lr0.00100_itr2500_2017_06_23_06_39_51/"
@@ -202,7 +203,7 @@ def main(region_num='1', lr=1E-03, iterations=10):
            activation_summary_lgn=TR_mean_LGNact,
            activation_summary_l1=TR_mean_L1act,
            yhat_std=TR_std_pred_response,
-           lr=lr, iterations=iterations, PLOT=PLOT)
+           MAXITER=MAXITER, iterations=iterations, PLOT=PLOT)
       #import ipdb; ipdb.set_trace() 
       responses = train_set
       pred_act = TR_last_pred_response;
