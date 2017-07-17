@@ -52,7 +52,7 @@ def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False,ZOOM=Fa
       if(PLOT):
         plt.show()
 
-def  compare_corr_all_regions(pred_response,vld_set, corr_set, stats_param='max',titletxt=''):
+def  compare_corr_all_regions(pred_response,vld_set, corr_set, stats_param='max',titletxt='', RETURN=False):
     corr1=corr_set['1']; corr2=corr_set['2']; corr3=corr_set['3']; 
     
     if stats_param.lower() == 'max' :
@@ -67,26 +67,29 @@ def  compare_corr_all_regions(pred_response,vld_set, corr_set, stats_param='max'
         idx2 = N2/2-1 if N2%2==0 else (N2-1)/2
         idx3 = N3/2-1 if N3%2==0 else (N3-1)/2
         
-        srt1 = np.sort(corr1); stat1=np.sort(corr1)[idx1]
-        stat1=corr1[idx1]; stat2=corr2[idx2]; stat3=corr3[idx3]; 
+        stat1=np.sort(corr1)[idx1]
+        stat2=np.sort(corr2)[idx2]
+        stat3=np.sort(corr3)[idx3]
     else:
         print "Parameter not Found "
     combine_corr = np.concatenate((corr1, corr2,corr3),axis=0)
-    
-    ax1=plt.subplot(3,1,1)
-    ax1.plot(vld_set['1'][:,idx1],'-ok')
-    ax1.plot(pred_response['1'][:, idx1],'--or')
-    ax1.set_title('Cell#%g is the %s  neuron in region 1, R = %.5f, mean neuron has R = %.5f'%(idx1+1 ,stats_param,stat1, np.mean(corr1)))
 
-    ax2=plt.subplot(3,1,2)
-    ax2.plot(vld_set['2'][:,idx2],'-ok')
-    ax2.plot(pred_response['2'][:, idx2],'--or')
-    ax2.set_title('Cell#%g is the %s neuron in region 2, R = %.5f, mean neuron has R = %.5f'%(idx2+1 ,stats_param,stat2, np.mean(corr2)))
+    fig, ax = plt.subplots()
+    plt.subplot(311)
+    plt.plot(vld_set['1'][:,idx1],'-ok')
+    plt.plot(pred_response['1'][:, idx1],'--or')
+    plt.title('Cell#%g is the %s  neuron in region 1, R = %.5f, mean neuron has R = %.5f'%(idx1+1 ,stats_param,stat1, np.mean(corr1)))
+
+    plt.subplot(312)
+    plt.plot(vld_set['2'][:,idx2],'-ok')
+    plt.plot(pred_response['2'][:, idx2],'--or')
+    plt.title('Cell#%g is the %s neuron in region 2, R = %.5f, mean neuron has R = %.5f'%(idx2+1 ,stats_param,stat2, np.mean(corr2)))
     
-    ax3=plt.subplot(3,1,3)
-    ax3.plot(vld_set['3'][:,idx3],'-ok')
-    ax3.plot(pred_response['3'][:, idx3],'--or')
-    ax3.set_title("Cell#%g is the %s neuron in region 3, R = %.5f, mean neuron has R = %.5f"%(idx3+1 ,stats_param,stat3, np.mean(corr3)))
+    plt.subplot(313)
+    plt.plot(vld_set['3'][:,idx3],'-ok')
+    plt.plot(pred_response['3'][:, idx3],'--or')
+    plt.title("Cell#%g is the %s neuron in region 3, R = %.5f, mean neuron has R = %.5f"%(idx3+1 ,stats_param,stat3, np.mean(corr3)))
+    
     report_txt="Overall mean corr = %.4f, best neuron has corr = %.4f, median neuron=%.4f"%(combine_corr.mean(), 
         combine_corr.max(), np.median(combine_corr))
             
@@ -95,3 +98,72 @@ def  compare_corr_all_regions(pred_response,vld_set, corr_set, stats_param='max'
     else:
         plt.suptitle("%s\n%s"%(titletxt,report_txt))
     plt.show()
+    
+    if RETURN :
+        return fig
+        
+def cdf_allregions( CorrData, NUM_REGIONS=3, DType='', C_CODE=False, SHOW=True, RETURN=False):
+    fig=plt.figure()
+    Fs={}; Xs={}
+    if(C_CODE):
+        Ccode=('k','b','#F97306')
+    for id in range(NUM_REGIONS):
+      rg=str(id+1)
+      corr = CorrData[rg]
+      N=len(corr)
+      Xs[rg]= np.sort(corr)
+      Fs[rg] = np.array(range(N))/float(N)*100.0
+      if(C_CODE):
+        plt.step(Xs[rg], Fs[rg],color= Ccode[id], label='Region'+rg)
+      else:
+        plt.step(Xs[rg], Fs[rg], label='Region'+rg)
+    
+    plt.legend(loc='upper left')
+    plt.title(DType+' CDF')
+    plt.ylabel('% of neurons')
+    plt.xlabel('Correlation coefficient')
+    if(SHOW):
+        plt.show()
+    if(RETURN):
+        return fig, Xs, Fs
+
+def  plot_corr_response_scatter(pred_response, vld_set, corr_set, stats_param='max',titletxt='', RETURN=False, datalabel1='Measured Response', datalabel2='Predicted Response'):
+    
+    if stats_param.lower() == 'max' :
+        idx1=np.argmax(corr_set);
+        stat1 = np.max(corr_set); 
+    elif stats_param.lower() == 'min' :
+        idx1=np.argmin(corr_set);
+        stat1 = np.min(corr_set); 
+    elif stats_param.lower() == 'median' or stats_param.lower() == 'med':
+        N1=len(corr_set);
+        idx1 = N1/2-1 if N1%2==0 else (N1-1)/2
+        stat1=np.sort(corr_set)[idx1]
+    else:
+        print "Parameter not Found "
+
+    fig, ax = plt.subplots()
+    plt.subplot(2,1,1)
+    plt.plot(vld_set[:,idx1],'-ok',label=datalabel1)
+    plt.plot(pred_response[:, idx1],'--or',label=datalabel2)
+    plt.ylabel('Response')
+    plt.xlabel('Image #')
+    plt.title("Cell#%g is the %s  neuron, R = %.5f, mean neuron has R = %.5f"%(idx1+1 ,stats_param,stat1, np.mean(corr_set)))
+    plt.legend(loc=0)
+    
+    plt.subplot(2,1,2)
+    plt.scatter(vld_set[:,idx1], pred_response[:,idx1])
+    N=np.ceil(np.max([np.max(pred_response[:,idx1]),np.max(vld_set[:,idx1])]))
+    plt.plot(np.arange(N),np.arange(N),'--c')
+    plt.xlim([0,N]); plt.ylim([0,N])
+    plt.ylabel(datalabel2)
+    plt.xlabel(datalabel1)
+    plt.title('Scatter plot of measured response and predicted response of cell#%g'%(idx1+1))
+    
+
+    if titletxt is not '':
+        plt.suptitle(titletxt)
+    plt.show()
+    
+    if RETURN :
+        return fig

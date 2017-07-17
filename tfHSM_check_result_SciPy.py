@@ -139,6 +139,7 @@ def get_param_from_fname(fname, keyword):
 
 SAVEFIG = True
 PLOT=True
+VLD_SET =True
 
 def main(region_num='1', lr=1E-03, iterations=10,MAXITER=10000):
   # Read file
@@ -154,11 +155,11 @@ def main(region_num='1', lr=1E-03, iterations=10,MAXITER=10000):
   
   current_path = os.getcwd()+'/'
   #data_dir = os.path.join(  "TFtrainingSummary/Region"+region_num+'/')
-  data_dir = os.path.join(  "TFtrainingSummary/SciPy_maxiter_grad/")
+  data_dir = os.path.join(  "TFtrainingSummary/SciPy_SEEDnumpy/")
 
   all_folders = os.listdir(current_path+data_dir)
   for sim_folder in all_folders:
-    fixed_param='_noMaxCGit' #'_lr0.10000_itr1e+06'
+    fixed_param='' #'_lr0.10000_itr1e+06'
     if not str.startswith(sim_folder,'AntolikRegion'+region_num+fixed_param):
       continue
     sim_folder+='/'
@@ -233,4 +234,17 @@ if __name__ == "__main__":
   main(region_num=region_num)
   print "Finished Region"+region_num+ ": Time %s\n" %(time.time() - tt_run_time)
 
-     
+     # #############  Mean activity to validation set ############## 
+corr={}; vld_corr={}
+for i in range(num_region):
+    id=str(i+1)
+    corr[id] = computeCorr(pred_train_response[id],train_set[id])
+    vld_corr[id]=computeCorr(pred_vld_response[id],vld_set[id])
+
+
+from funcs_for_graphs import *
+compare_corr_all_regions(pred_train_response,train_set, corr, stats_param='median', titletxt='Training Set')
+compare_corr_all_regions(pred_vld_response,vld_set, vld_corr, stats_param='median', titletxt='Validation Set')
+
+compare_corr_all_regions(pred_train_response,train_set, corr, stats_param='max', titletxt='Training Set')
+compare_corr_all_regions(pred_vld_response,vld_set, vld_corr, stats_param='max', titletxt='Validation Set')

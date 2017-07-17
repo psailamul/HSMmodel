@@ -9,7 +9,7 @@ import time
 from get_host_path import get_host_path
 
 download_time = time.time()
-Region_num='1'
+Region_num='3'
 training_inputs=np.load('/home/pachaya/AntolikData/SourceCode/Data/region'+Region_num+'/training_inputs.npy')
 training_set=np.load('/home/pachaya/AntolikData/SourceCode/Data/region'+Region_num+'/training_set.npy')
 print "Download complete: Time %s" %(time.time() - download_time)
@@ -36,7 +36,7 @@ SUMMARY_DIR = 'TFtrainingSummary/SciPy_SEEDnumpy/'
 out=minimize(func ,Ks,method='TNC',jac=hsm.der(),bounds=hsm.bounds,options={'maxiter':MAXITER,'disp':True})
 import ipdb; ipdb.set_trace()
 Ks=out.x
-np.save("%sHSMout_theano_%s_Rg%s_MaxIter%g_seed%g.npy"%(SUMMARY_DIR,Code,Region_num, MAXITER,seed),out)
+np.save("%sHSMout_theano_%s_Rg%s_MaxIter%g_seed%g.npy"%(SUMMARY_DIR,Code,Region_num, MAXITER,seed), out, hsm) #NOTE: use savez in Final  code
 print "Saved"
 
 print 'Final training error: ', func(numpy.array(Ks))/num_neurons/len(training_set)
