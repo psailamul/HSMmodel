@@ -117,7 +117,14 @@ ax3.set_title('Region 3 :Cell#%d has min corr of %f'%(imin3+1,np.min(vld_corr3))
 
 plt.show()
 
-"""
+plt.ion()
+for img in train_input1:
+    img = img.reshape([31,31])
+    plt.imshow(img,cmap='gray')
+    plt.show()
+    plt.time(1)
+
+    """
 import matplotlib.image as mpimg
 
 
