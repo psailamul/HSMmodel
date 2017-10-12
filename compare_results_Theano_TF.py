@@ -184,6 +184,10 @@ for i in range(NUM_REGIONS):
 TNTF_TR_fig_max=compare_corr_all_regions(Theano_TR_pred_response,TF_TR_pred_response, TNTF_corr, stats_param='max', titletxt='Theano&TensorFlow :: Training Set', RETURN=True)
 TNTF_VLD_fig_max=compare_corr_all_regions(Theano_VLD_pred_response,TF_VLD_pred_response, TNTF_vld_corr, stats_param='max', titletxt='Theano&TensorFlow :: Validation Set', RETURN=True)
 
+TNTF_TR_fig_max=compare_corr_all_regions(Theano_TR_pred_response,TF_TR_pred_response, TNTF_corr, stats_param='median', titletxt='Theano&TensorFlow :: Training Set', RETURN=True)
+TNTF_VLD_fig_max=compare_corr_all_regions(Theano_VLD_pred_response,TF_VLD_pred_response, TNTF_vld_corr, stats_param='median', titletxt='Theano&TensorFlow :: Validation Set', RETURN=True)
+
+
 #Histogram of TN & TF correlation
 combine_TNTF_corr = np.concatenate((TNTF_corr['1'], TNTF_corr['2'],TNTF_corr['3']),axis=0)
 combine_TNTF_vld_corr = np.concatenate((TNTF_vld_corr['1'], TNTF_vld_corr['2'],TNTF_vld_corr['3']),axis=0)
@@ -206,9 +210,45 @@ fig_TNTF_TR,Xs,Fs = cdf_allregions( TNTF_corr, NUM_REGIONS=3, DType='Training se
 fig_TNTF_VLD,Xs,Fs = cdf_allregions( TNTF_vld_corr, NUM_REGIONS=3, DType='Validation set of Theano and TensorFlow version: ', C_CODE=True, SHOW=True, RETURN=True)
 
 
- plot_corr_response_scatter(pred_response, vld_set, corr_set, stats_param='max',titletxt='', RETURN=False):
+#plot_corr_response_scatter(pred_response, vld_set, corr_set, stats_param='max',titletxt='', RETURN=False):
  
 
+#For FYP 
+#Data , Theano, TF 
+# Cell with median corr between TN and TF Median Cell#130 idx=139
+#Label TN with data 
+# Label TF with data
+Theano_VLD_pred_response,vld_set, TN_vld_corr
+TF_VLD_pred_response,vld_set, TF_vld_corr
+
+
+    vld_set, 
+    Antolik_set
+    TF_set = 
+    N1=len(corr_set);
+    idx1 = N1/2-1 if N1%2==0 else (N1-1)/2
+    stat1=np.sort(corr_set)[idx1]
+datalabel1='Measured Response', datalabel2='Predicted Response'
+
+    fig, ax = plt.subplots()
+    plt.subplot(2,1,1)
+    plt.plot(vld_set[:,idx1],'-ok',label='Measured Response)
+    plt.plot(pred_response[:, idx1],'--or',label='Predicted Response')
+    plt.plot(pred_response[:, idx1],'--or',label='Predicted Response')
+    
+    plt.ylabel('Response')
+    plt.xlabel('Image #')
+    plt.title("Cell#%g is the %s  neuron, R = %.5f, mean neuron has R = %.5f"%(idx1+1 ,stats_param,stat1, np.mean(corr_set)))
+    plt.legend(loc=0)
+    
+    plt.subplot(2,1,2)
+    plt.scatter(vld_set[:,idx1], pred_response[:,idx1])
+    N=np.ceil(np.max([np.max(pred_response[:,idx1]),np.max(vld_set[:,idx1])]))
+    plt.plot(np.arange(N),np.arange(N),'--c')
+    plt.xlim([0,N]); plt.ylim([0,N])
+    plt.ylabel(datalabel2)
+    plt.xlabel(datalabel1)
+    plt.title('Scatter plot of measured response and predicted response of cell#%g'%(idx1+1))
 
 
 if(SAVEFIG):
