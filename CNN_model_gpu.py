@@ -55,17 +55,6 @@ def max_pool_2x2(x):
   return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
                         strides=[1, 2, 2, 1], padding='SAME') #Default in Keras is VALID
 
-def batch_flatten(x):
-    """Turn a nD tensor into a 2D tensor with same 0th dimension.
-    In other words, it flattens each data samples of a batch.
-    # Arguments
-        x: A tensor or variable.
-    # Returns
-        A tensor.
-    """
-    x = tf.reshape(x, tf.stack([-1, tf.reduce_prod(tf.shape(x)[1:])]))
-    return x
-
 def parametric_softplus(_x):
   alphas = tf.get_variable('alpha', _x.get_shape()[-1],
                        initializer=tf.constant_initializer(0.0),
@@ -76,7 +65,17 @@ def parametric_softplus(_x):
 
   return alphas * tf.log(1 + tf.exp(betas * _x)) # Equation from https://faroit.github.io/keras-docs/0.3.3/layers/advanced_activations/
 
-
+def batch_flatten(x):
+    """Turn a nD tensor into a 2D tensor with same 0th dimension.
+    In other words, it flattens each data samples of a batch.
+    # Arguments
+        x: A tensor or variable.
+    # Returns
+        A tensor.
+    """
+    x = tf.reshape(x, tf.stack([-1, tf.reduce_prod(tf.shape(x)[1:])]))
+    return x
+    
 #Deep retina model
 with tf.device('/gpu:0'):
     x = tf.placeholder(tf.float32, shape = [None, img_size, img_size]) # placeholder for input images
