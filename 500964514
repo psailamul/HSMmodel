@@ -1,0 +1,45 @@
+500964514
+
+scipy.io.savemat
+
+a_dict = {col_name : df[col_name].values for col_name in df.columns.values}
+a_dict[df.index.name] = df.index.values
+scipy.io.savemat('test_struct_to_mat.mat', {'struct':a_dict})
+
+import numpy as np
+import scipy.io
+
+x = np.linspace(0, 2 * np.pi, 100)
+y = np.cos(x)
+
+scipy.io.savemat('test.mat', dict(x=x, y=y))
+
+
+# 
+        self.available_stims = ['locally_sparse_noise',
+            'locally_sparse_noise_4deg',
+            'locally_sparse_noise_8deg',
+            'natural_movie_one',
+            'natural_movie_three',
+            'natural_movie_two',
+            'natural_scenes'
+        ]
+
+
+for sess in exp_session:
+    data_set = boc.get_ophys_experiment_data(sess['id'])
+    stim_lists =data_set.list_stimuli()
+    sess_type = sess['session_type']
+    data_to_mat = {}
+    print sess_type
+    for stim in stim_lists:
+        if stim in config.available_stims:
+            print '\t' + stim
+            stim_input = data_set.get_stimulus_template(stim)
+            data_to_mat[stim]=stim_input
+
+    scipy.io.savemat('input_'+sess_type+'.mat', data_to_mat)
+    print 'Saved as ' 'input_'+sess_type+'.mat'
+    print '\n'
+
+
