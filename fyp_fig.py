@@ -1,5 +1,7 @@
-TNTF_TR_fig_max=compare_corr_all_regions(Theano_TR_pred_response,TF_TR_pred_response, TNTF_corr, stats_param='median', titletxt='Theano&TensorFlow :: Training Set', RETURN=True)
-TNTF_VLD_fig_max=compare_corr_all_regions(Theano_VLD_pred_response,TF_VLD_pred_response, TNTF_vld_corr, stats_param='median', titletxt='Theano&TensorFlow :: Validation Set', RETURN=True)
+import funcs_for_graphs as my_g
+
+TNTF_TR_fig_max=my_g.compare_corr_all_regions(Theano_TR_pred_response,TF_TR_pred_response, TNTF_corr, stats_param='median', titletxt='Theano&TensorFlow :: Training Set', RETURN=True)
+TNTF_VLD_fig_max=my_g.compare_corr_all_regions(Theano_VLD_pred_response,TF_VLD_pred_response, TNTF_vld_corr, stats_param='median', titletxt='Theano&TensorFlow :: Validation Set', RETURN=True)
 vld_set
 Theano_VLD_pred_response
 TF_VLD_pred_response

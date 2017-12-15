@@ -7,14 +7,17 @@ import numpy as np
 from fitting import fitHSM
 import time
 from get_host_path import get_host_path
+import os
 
 download_time = time.time()
 Region_num='3'
-training_inputs=np.load('/home/pachaya/AntolikData/SourceCode/Data/region'+Region_num+'/training_inputs.npy')
-training_set=np.load('/home/pachaya/AntolikData/SourceCode/Data/region'+Region_num+'/training_set.npy')
+curr = os.getcwd()
+
+training_inputs=np.load(os.path.join(curr,'Data/region'+Region_num+'/training_inputs.npy'))
+training_set=np.load(os.path.join(curr,'Data/region'+Region_num+'/training_set.npy'))
 print "Download complete: Time %s" %(time.time() - download_time)
 call_time = time.time()
-seed=13; lgn=9; hlsr=0.2
+seed=0; lgn=9; hlsr=0.2
 
 num_pres,num_neurons = numpy.shape(training_set)
 print "Creating HSM model"

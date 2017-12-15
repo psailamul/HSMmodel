@@ -4,30 +4,31 @@ import matplotlib.image as mpimg
 import time
 from HSM import HSM
 from visualization import *
-
+import os
+curr =os.getcwd()
 
 download_time = time.time() #print "Download complete: Time %s" %(time.time() - download_time)
-train_input1=np.load('/home/pachaya/AntolikData/SourceCode/Data/region1/training_inputs.npy')
-train_set1=np.load('/home/pachaya/AntolikData/SourceCode/Data/region1/training_set.npy')
+train_input1=np.load(os.path.join(curr,'Data/region1/training_inputs.npy'))
+train_set1=np.load(os.path.join(curr,'Data/region1/training_set.npy'))
 
-train_input2=np.load('/home/pachaya/AntolikData/SourceCode/Data/region2/training_inputs.npy')
-train_set2=np.load('/home/pachaya/AntolikData/SourceCode/Data/region2/training_set.npy')
+train_input2=np.load(os.path.join(curr,'Data/region2/training_inputs.npy'))
+train_set2=np.load(os.path.join(curr,'Data/region2/training_set.npy'))
 
-train_input3=np.load('/home/pachaya/AntolikData/SourceCode/Data/region3/training_inputs.npy')
-train_set3=np.load('/home/pachaya/AntolikData/SourceCode/Data/region3/training_set.npy')
+train_input3=np.load(os.path.join(curr,'Data/region3/training_inputs.npy'))
+train_set3=np.load(os.path.join(curr,'Data/region3/training_set.npy'))
 
 
-raw_vld_set1 = np.load('/home/pachaya/AntolikData/SourceCode/Data/region1/raw_validation_set.npy')
-vldinput_set1 = np.load('/home/pachaya/AntolikData/SourceCode/Data/region1/validation_inputs.npy')
-vld_set1 = np.load('/home/pachaya/AntolikData/SourceCode/Data/region1/validation_set.npy')
+raw_vld_set1 = np.load(os.path.join(curr,'Data/region1/raw_validation_set.npy'))
+vldinput_set1 = np.load(os.path.join(curr,'Data/region1/validation_inputs.npy'))
+vld_set1 = np.load(os.path.join(curr,'Data/region1/validation_set.npy'))
 
-raw_vld_set2 = np.load('/home/pachaya/AntolikData/SourceCode/Data/region2/raw_validation_set.npy')
-vldinput_set2 = np.load('/home/pachaya/AntolikData/SourceCode/Data/region2/validation_inputs.npy')
-vld_set2 = np.load('/home/pachaya/AntolikData/SourceCode/Data/region2/validation_set.npy')
+raw_vld_set2 = np.load(os.path.join(curr,'Data/region2/raw_validation_set.npy'))
+vldinput_set2 = np.load(os.path.join(curr,'Data/region2/validation_inputs.npy'))
+vld_set2 = np.load(os.path.join(curr,'Data/region2/validation_set.npy'))
 
-raw_vld_set3 = np.load('/home/pachaya/AntolikData/SourceCode/Data/region3/raw_validation_set.npy')
-vldinput_set3 = np.load('/home/pachaya/AntolikData/SourceCode/Data/region3/validation_inputs.npy')
-vld_set3 = np.load('/home/pachaya/AntolikData/SourceCode/Data/region3/validation_set.npy')
+raw_vld_set3 = np.load(os.path.join(curr,'Data/region3/raw_validation_set.npy'))
+vldinput_set3 = np.load(os.path.join(curr,'Data/region3/validation_inputs.npy'))
+vld_set3 = np.load(os.path.join(curr,'Data/region3/validation_set.npy'))
 
 #out = fitHSM(r1_train_input,r1_train_set)
 
