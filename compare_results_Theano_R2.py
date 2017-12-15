@@ -155,3 +155,88 @@ for i in range(NUM_REGIONS):
     #TensorFlow
     TF_TR_pred_response[id] = TensorFlow_outputs[id]['TR_1st_pred_response'] # predicted response after train
     TF_VLD_pred_response[id] = TensorFlow_outputs[id]['VLD_1st_ypredict'] #predicted response for validation set
+    
+    
+    
+TF=TF_TR_pred_response['1']
+TN=Theano_TR_pred_response['1']
+line_len = max(np.ceil(TN.max()),np.ceil(TF.max()))
+
+#All cells
+all_TN = np.reshape(TN,[-1])
+all_TF = np.reshape(TF,[-1])
+plt.scatter(all_TN,all_TF)
+plt.plot(np.arange(line_len+1),np.arange(line_len+1),'k')
+plt.show()
+
+cell =2
+this_TN=TN[:,cell]
+this_TF=TF[:,cell]
+line=np.ceil(max(this_TN.max(),this_TF.max()))
+
+plt.scatter(this_TN,this_TF)
+plt.plot(np.arange(line+1),np.arange(line+1),'k')
+plt.show()
+
+r_sqr = TN_TF_Rsquare(this_TN, this_TF)
+
+plot_TN_TF_scatter_linear(this_TN, this_TF)
+
+all_cells = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(TN.T,TF.T)]
+
+
+
+def TN_TF_Rsquare(TN, TF):
+  """
+  With the expectation that TN and TF would generate the same prediction. 
+  Thus y = x where x is the neural response from HSM model 
+  and y is the neural response from the Tensorflow implementation
+  Return the calculate the R^2
+  """
+  y = TF
+  x = TN
+  f = x
+  err =  y-f
+  ymean = np.mean(y)
+  SStot = np.sum(np.power(y-ymean,2)) #total sum of squares
+  SSreg = np.sum(np.powersort(err,2)) #Residual sum of square
+
+  return 1-np.true_divide(SSres, SStot)
+
+def plot_TN_TF_scatter_linear(TN, TF, txt =''):
+  line=np.ceil(max(TN.max(),TF.max()))
+  plt.scatter(TN,TF,c='b',marker='.')
+  plt.plot(np.arange(line+1),np.arange(line+1),'-k')
+  plt.title("%s: %g"%(txt,TN_TF_Rsquare(TN,TF)))
+  plt.show()
+
+
+
+this_TN=TN[:,62]
+this_TF=TF[:,62]
+y = this_TF
+x = this_TN
+f = x
+err =  y-f
+ymean = np.mean(y)
+SStot = np.sum(np.power(y-ymean,2)) #total sum of squares
+SSreg = np.sum(np.power(f-ymean,2)) #explained sum of square
+SSres = np.sum(np.power(err,2)) #Residual sum of square
+R = 1-np.true_divide(SSres, SStot)
+
+
+sort_ind= np.argsort(this_TN)
+sortTN = this_TN[sort_ind]
+sortTF = this_TF[sort_ind]
+plt.plot(sortTN,sortTF)  
+plt.show()
+
+
+
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn import datasets, linear_model
+from sklearn.metrics import mean_squared_error, r2_score
+

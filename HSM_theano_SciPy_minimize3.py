@@ -17,7 +17,7 @@ training_inputs=np.load(os.path.join(curr,'Data/region'+Region_num+'/training_in
 training_set=np.load(os.path.join(curr,'Data/region'+Region_num+'/training_set.npy'))
 print "Download complete: Time %s" %(time.time() - download_time)
 call_time = time.time()
-seed=0; lgn=9; hlsr=0.2
+seed=13; lgn=9; hlsr=0.2
 
 num_pres,num_neurons = numpy.shape(training_set)
 print "Creating HSM model"
@@ -37,11 +37,11 @@ HOST, PATH = get_host_path(HOST=True, PATH=True)
 SUMMARY_DIR = 'TFtrainingSummary/SciPy_SEEDnumpy/'
 #c(Ks,success,c)=fmin_tnc(func ,Ks,fprime=hsm.der(),bounds=hsm.bounsd,maxfun = 100000,messages=0)  # https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.optimize.fmin_tnc.html
 out=minimize(func ,Ks,method='TNC',jac=hsm.der(),bounds=hsm.bounds,options={'maxiter':MAXITER,'disp':True})
-import ipdb; ipdb.set_trace()
-Ks=out.x
-np.save("%sHSMout_theano_%s_Rg%s_MaxIter%g_seed%g.npy"%(SUMMARY_DIR,Code,Region_num, MAXITER,seed), out, hsm) #NOTE: use savez in Final  code
-print "Saved"
 
+Ks=out.x
+np.save("%sHSMout_theano_%s_Rg%s_MaxIter%g_seed%g_2.npy"%(SUMMARY_DIR,Code,Region_num, MAXITER,seed), out, hsm) #NOTE: use savez in Final  code
+print "Saved"
+import ipdb; ipdb.set_trace()
 print 'Final training error: ', func(numpy.array(Ks))/num_neurons/len(training_set)
 runtime = time.time() - call_time
 
