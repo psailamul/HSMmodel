@@ -71,19 +71,90 @@ def combine_corrs(corrs):
 
 def combine_responses(response):
     return np.concatenate((response['1'], response['2'],response['3']),axis=1) 
-    
+
+def TN_TF_Rsquare(TN, TF):
+  """
+  With the expectation that TN and TF would generate the same prediction. 
+  Thus y = x where x is the neural response from HSM model 
+  and y is the neural response from the Tensorflow implementation
+  Return the calculate the R^2
+  """
+  y = TF
+  x = TN
+  f = x
+  err =  y-f
+  ymean = np.mean(y)
+  SStot = np.sum(np.power(y-ymean,2)) #total sum of squares
+  SSreg = np.sum(np.power(f-ymean,2))
+  SSres = np.sum(np.power(err,2)) #Residual sum of square
+  return 1-np.true_divide(SSres, SStot)
+
+def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementation with Theano',ylbl="Re-implementation with Tensorflow"):
+  line=np.ceil(max(TN.max(),TF.max()))
+  plt.scatter(TN,TF,c='b',marker='.')
+  plt.plot(np.arange(line+1),np.arange(line+1),'-k')
+  plt.text(line_len-1, line_len-1, 'y = x',
+         rotation=45,
+         horizontalalignment='center',
+         verticalalignment='top',
+         multialignment='center')
+  plt.title(titletxt)
+  plt.xlabel(xlbl)
+  plt.ylabel(ylbl)
+  plt.show()
+
+def plot_TN_TF_withR2(TN,TF,set_name='validation',SEED=SEED):
+  line_len = max(np.ceil(TN.max()),np.ceil(TF.max()))
+
+  #All cells
+  all_TN = np.reshape(TN,[-1])
+  all_TF = np.reshape(TF,[-1])
+  r_sqr = TN_TF_Rsquare(all_TN, all_TF)
+  plt.scatter(all_TN,all_TF)
+  plt.plot(np.arange(line_len+1),np.arange(line_len+1),'k')
+  plt.text(line_len-1, line_len-1, 'y = x',
+           rotation=45,
+           horizontalalignment='center',
+           verticalalignment='top',
+           multialignment='center')
+  plt.title("Predicted Responses from %s set when seed = %g\nR^2 = %f"%(set_name,SEED,r_sqr))
+  plt.xlabel("Antolik's implementation (Theano)")
+  plt.ylabel("Re-implementation with Tensorflow")
+  plt.show()
+
+def plot_seeds_withR2(S1,S2,set_name='validation',region='3',seeds =('13','0'), implementation = 'Antolik''s implementation'):
+
+  line_len = max(np.ceil(S1.max()),np.ceil(S2.max()))
+
+  #All cells
+  all_S1 = np.reshape(S1,[-1])
+  all_S2 = np.reshape(S2,[-1])
+  r_sqr = TN_TF_Rsquare(all_S1, all_S2)
+  plt.scatter(all_S1,all_S2)
+  plt.plot(np.arange(line_len+1),np.arange(line_len+1),'k')
+  plt.text(line_len-1, line_len-1, 'y = x',
+           rotation=45,
+           horizontalalignment='center',
+           verticalalignment='top',
+           multialignment='center')
+  plt.title("Predicted Responses from %s set in region = %s\nR^2 = %f"%(set_name,region,r_sqr))
+  plt.xlabel("%s seed: %s"%(implementation,seeds[0]))
+  plt.ylabel("%s seed: %s"%(implementation,seeds[1]))
+  plt.show()
+
 # ############# Setting ###############
-SAVEFIG=True
+SAVEFIG=False
 SEED=13
 FIG_HANDLES=[]
 FIG_NAMES=[]
 
 # ############## Specified Folder ##########################
 Code='TN_TF_comparison_new'
-PATH = '/media/data_cifs/pachaya/SourceCode'
+#PATH = '/media/data_cifs/pachaya/SourceCode'
+
 #TFtrainingSummary/SciPy_SEEDnumpy/AntolikRegion3_SciPy_jac_npSeed_MaxIter100000_itr2_SEED13_2017_07_16_00_02_57/TRdat_trainedHSM_region3_trial13.npz
 
-HOST='x8'
+HOST, PATH =get_host_path(HOST=True,PATH=True)
 
 SUMMARY_DIR = 'TFtrainingSummary/SciPy_SEEDnumpy/'
 
@@ -96,9 +167,9 @@ all_dirs = os.listdir(data_dir)
 if SAVEFIG :
     date=str(datetime.now())
     date = date[:10]
-    if not os.path.isdir(current_path+'/Figures/'+date+'_'+Code+'/') :
-      os.mkdir(current_path+'/Figures/'+date+'_'+Code+'/')
-    Fig_fold=current_path+'/Figures/'+date+'_'+Code+'/'
+    if not os.path.isdir(current_path+'Figures/'+date+'_'+Code+'/') :
+      os.mkdir(current_path+'Figures/'+date+'_'+Code+'/')
+    Fig_fold=current_path+'Figures/'+date+'_'+Code+'/'
     dt_stamp = re.split(
       '\.', str(datetime.now()))[0].\
       replace(' ', '_').replace(':', '_').replace('-', '_')
@@ -121,31 +192,55 @@ print "Download Data set complete: Time %s" %(time.time() - download_time)
 
 
 # ####### Download trained result ################
+#1 seed =13 , all reguons
+#2 region =3, seed = 0, 13,13-2
+TN_checkSeed ={}; TF_checkSeed = {}
+seed_list=['0','13','13-2']
+for ss in seed_list:
+    TN_checkSeed[ss]=None
+    TF_checkSeed[ss]=None
+Ks_seeds ={}
+
 Theano_outputs={}; TensorFlow_outputs={}
 for i in range(NUM_REGIONS):
     Theano_outputs[str(i+1)]=None
     TensorFlow_outputs[str(i+1)]=None
-
+ 
 hsm = build_hsm_for_Theano()
 Ks={}
 for dir_item in all_dirs:
     if str.startswith(dir_item,'HSMout_theano_SciPytestSeed'): #  Theano # HSMout_theano_SciPytestSeed_Rg1_MaxIter100000_seed13
-      rg_id=get_param_from_fname(dir_item, 'Rg'); 
+      #remove.npy
+      this_item = dir_item[:-4]
+      rg_id=get_param_from_fname(this_item, 'Rg');
+      seed_id=get_param_from_fname(this_item, 'seed')      
       tmpitem = np.load(data_dir+dir_item)
-      Theano_outputs[rg_id]=tmpitem.item()
-      Theano_outputs[rg_id]['hsm']=hsm[rg_id]
-      Ks[rg_id]=Theano_outputs[rg_id]['x']
+      if seed_id == '13':
+        Theano_outputs[rg_id]=tmpitem.item()
+        Theano_outputs[rg_id]['hsm']=hsm[rg_id]
+        Ks[rg_id]=Theano_outputs[rg_id]['x']
+      if rg_id=='3':
+        TN_checkSeed[seed_id]=tmpitem.item()
+        TN_checkSeed[seed_id]['hsm']=hsm[rg_id]
+        Ks_seeds[seed_id]=TN_checkSeed[seed_id]['x']
+      
     elif str.startswith(dir_item,'AntolikRegion'): # Tensorflow
-      rg_id=get_param_from_fname(dir_item, 'AntolikRegion'); 
+      rg_id=get_param_from_fname(dir_item, 'AntolikRegion')
+      seed_id=get_param_from_fname(dir_item, 'SEED')
       tmpdat=load_TensorFlow_outputs('', data_dir, dir_item)
       assert tmpdat is not None 
-      TensorFlow_outputs[rg_id]=tmpdat
+      if seed_id=='13':
+        TensorFlow_outputs[rg_id]=tmpdat
+      if rg_id =='3':
+        TF_checkSeed[seed_id] = tmpdat
     else:
       continue
 
-# #############  Get predicted response ############## 
-Theano_TR_pred_response={}; Theano_VLD_pred_response={};
-TF_TR_pred_response={}; TF_VLD_pred_response={}
+
+Theano_TR_pred_response= {str(id+1):None for id in range(NUM_REGIONS)}
+Theano_VLD_pred_response={str(id+1):None for id in range(NUM_REGIONS)}
+TF_TR_pred_response={str(id+1):None for id in range(NUM_REGIONS)}
+TF_VLD_pred_response={str(id+1):None for id in range(NUM_REGIONS)}
 
 for i in range(NUM_REGIONS):
     id=str(i+1)
@@ -156,18 +251,80 @@ for i in range(NUM_REGIONS):
     TF_TR_pred_response[id] = TensorFlow_outputs[id]['TR_1st_pred_response'] # predicted response after train
     TF_VLD_pred_response[id] = TensorFlow_outputs[id]['VLD_1st_ypredict'] #predicted response for validation set
     
+
+TN_TR_pred_checkseed={ss:None for ss in seed_list}
+TN_VLD_pred_checkseed={ss:None for ss in seed_list}
+TF_TR_pred_checkseed={ss:None for ss in seed_list}
+TF_VLD_pred_checkseed={ss:None for ss in seed_list}
+id ='3'
+for ss in seed_list:
+    #Theano
+    TN_TR_pred_checkseed[ss] = HSM.response(hsm[id],train_input[id],Ks_seeds[ss]) # predicted response after train
+    TN_VLD_pred_checkseed[ss] = HSM.response(hsm[id],vldinput_set[id],Ks_seeds[ss]) #predicted response for validation set
+    #TensorFlow
+    TF_TR_pred_checkseed[ss] = TF_checkSeed[ss]['TR_1st_pred_response'] # predicted response after train
+    TF_VLD_pred_checkseed[ss] = TF_checkSeed[ss]['VLD_1st_ypredict'] #predicted response for validation set
     
-    
-TF=TF_TR_pred_response['1']
-TN=Theano_TR_pred_response['1']
+
+# #############  Comparison ############## 
+#Setting 
+Region = '1'
+Seed = 13
+
+"""
+#Comparison details
+
+#Within-model comparison 
+# seed =13 , all reguons
+response1 =TF_TR_pred_response[Region]
+response2 =
+description = 
+# region = 3, seed = 0, 13, 13-2
+
+#Between-model comparison  TN-TF
+# seed =13 , all reguons
+response1 =TF_TR_pred_response[Region]
+response2 =Theano_TR_pred_response
+description = 
+# region = 3, seed = 0, 13, 13-2
+response1 =
+response2 = 
+description =
+"""
+
+TF=TF_TR_pred_response['3']
+TN=Theano_TR_pred_response['3']
 line_len = max(np.ceil(TN.max()),np.ceil(TF.max()))
 
 #All cells
 all_TN = np.reshape(TN,[-1])
 all_TF = np.reshape(TF,[-1])
+r_sqr = TN_TF_Rsquare(all_TN, all_TF)
 plt.scatter(all_TN,all_TF)
 plt.plot(np.arange(line_len+1),np.arange(line_len+1),'k')
+plt.text(line_len-1, line_len-1, 'y = x',
+         rotation=45,
+         horizontalalignment='center',
+         verticalalignment='top',
+         multialignment='center')
+plt.title("Predicted Responses from training set when seed = %g\nR^2 = %f"%(SEED,r_sqr))
+plt.xlabel("Antolik's implementation (Theano)")
+plt.ylabel("Re-implementation with Tensorflow")
 plt.show()
+
+
+
+
+
+
+plot_seeds_withR2(TF_TR_pred_checkseed['13'],TF_TR_pred_checkseed['13-2'],set_name='training',region='3',seeds =('13','13-2'), implementation = 'Antolik''s implementation')
+
+plot_seeds_withR2(TN_TR_pred_checkseed['13'],TF_TR_pred_checkseed['13'],set_name='training',region='3',seeds =('13','13'), implementation = 'Antolik''s implementation')
+
+
+
+plot_seeds_withR2(TF_VLD_pred_checkseed['0'],TN_VLD_pred_checkseed['13'],set_name='training',region='3',seeds =('13','13'), implementation = 'Antolik''s implementation')
+
 
 cell =2
 this_TN=TN[:,cell]
@@ -181,62 +338,38 @@ plt.show()
 r_sqr = TN_TF_Rsquare(this_TN, this_TF)
 
 plot_TN_TF_scatter_linear(this_TN, this_TF)
+plot_TN_TF_withR2(this_TN,this_TF,set_name='validation',SEED=13)
 
 all_cells = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(TN.T,TF.T)]
 
 
 
-def TN_TF_Rsquare(TN, TF):
-  """
-  With the expectation that TN and TF would generate the same prediction. 
-  Thus y = x where x is the neural response from HSM model 
-  and y is the neural response from the Tensorflow implementation
-  Return the calculate the R^2
-  """
-  y = TF
-  x = TN
-  f = x
-  err =  y-f
-  ymean = np.mean(y)
-  SStot = np.sum(np.power(y-ymean,2)) #total sum of squares
-  SSreg = np.sum(np.powersort(err,2)) #Residual sum of square
+from visualization import *
+corr = computeCorr(TN, TF)
+vld_corr = computeCorr(TN,TF)
 
-  return 1-np.true_divide(SSres, SStot)
 
-def plot_TN_TF_scatter_linear(TN, TF, txt =''):
+from funcs_for_graphs import *
+Region_num='3'
+report_txt="Region #%s: Training Set\nMean corr = %.4f, best neuron has corr = %.4f, median neuron=%.4f"%(Region_num, corr.mean(), corr.max(), np.median(corr))
+plot_act_of_max_min_corr(report_txt, TN,TF,corr, PLOT=True,ZOOM=True)
+
+report_txt="Region #%s: Validation Set\nMean corr = %.4f, best neuron has corr = %.4f, median neuron=%.4f"%(Region_num, vld_corr.mean(), vld_corr.max(), np.median(vld_corr))
+plot_act_of_max_min_corr(report_txt, pred_response,vld_set,vld_corr, PLOT=True,ZOOM=False)
+
+
+
+
+def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementation with Theano',ylbl="Re-implementation with Tensorflow"):
   line=np.ceil(max(TN.max(),TF.max()))
   plt.scatter(TN,TF,c='b',marker='.')
   plt.plot(np.arange(line+1),np.arange(line+1),'-k')
-  plt.title("%s: %g"%(txt,TN_TF_Rsquare(TN,TF)))
+  plt.text(line_len-1, line_len-1, 'y = x',
+         rotation=45,
+         horizontalalignment='center',
+         verticalalignment='top',
+         multialignment='center')
+  plt.title(titletxt)
+  plt.xlabel(xlbl)
+  plt.ylabel(ylbl)
   plt.show()
-
-
-
-this_TN=TN[:,62]
-this_TF=TF[:,62]
-y = this_TF
-x = this_TN
-f = x
-err =  y-f
-ymean = np.mean(y)
-SStot = np.sum(np.power(y-ymean,2)) #total sum of squares
-SSreg = np.sum(np.power(f-ymean,2)) #explained sum of square
-SSres = np.sum(np.power(err,2)) #Residual sum of square
-R = 1-np.true_divide(SSres, SStot)
-
-
-sort_ind= np.argsort(this_TN)
-sortTN = this_TN[sort_ind]
-sortTF = this_TF[sort_ind]
-plt.plot(sortTN,sortTF)  
-plt.show()
-
-
-
-
-
-import matplotlib.pyplot as plt
-import numpy as np
-from sklearn import datasets, linear_model
-from sklearn.metrics import mean_squared_error, r2_score
-

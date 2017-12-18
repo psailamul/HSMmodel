@@ -167,3 +167,57 @@ def  plot_corr_response_scatter(pred_response, vld_set, corr_set, stats_param='m
     
     if RETURN :
         return fig
+
+
+def plot_seeds_withR2(S1,S2,set_name='validation',region='3',seeds =('13','0'), implementation = 'Antolik''s implementation'):
+
+  line_len = max(np.ceil(S1.max()),np.ceil(S2.max()))
+
+  #All cells
+  all_S1 = np.reshape(S1,[-1])
+  all_S2 = np.reshape(S2,[-1])
+  r_sqr = TN_TF_Rsquare(all_S1, all_S2)
+  plt.scatter(all_S1,all_S2)
+  plt.plot(np.arange(line_len+1),np.arange(line_len+1),'k')
+  plt.text(line_len-1, line_len-1, 'y = x',
+           rotation=45,
+           horizontalalignment='center',
+           verticalalignment='top',
+           multialignment='center')
+  plt.title("Predicted Responses from %s set in region = %s\nR^2 = %f"%(set_name,region,r_sqr))
+  plt.xlabel("%s seed: %s"%(implementation,seeds[0]))
+  plt.ylabel("%s seed: %s"%(implementation,seeds[1]))
+  plt.show()
+
+def plot_TN_TF_withR2(TN,TF,set_name='validation',SEED=SEED):
+  line_len = max(np.ceil(TN.max()),np.ceil(TF.max()))
+
+  #All cells
+  all_TN = np.reshape(TN,[-1])
+  all_TF = np.reshape(TF,[-1])
+  r_sqr = TN_TF_Rsquare(all_TN, all_TF)
+  plt.scatter(all_TN,all_TF)
+  plt.plot(np.arange(line_len+1),np.arange(line_len+1),'k')
+  plt.text(line_len-1, line_len-1, 'y = x',
+           rotation=45,
+           horizontalalignment='center',
+           verticalalignment='top',
+           multialignment='center')
+  plt.title("Predicted Responses from %s set when seed = %g\nR^2 = %f"%(set_name,SEED,r_sqr))
+  plt.xlabel("Antolik's implementation (Theano)")
+  plt.ylabel("Re-implementation with Tensorflow")
+  plt.show()
+
+def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementation with Theano',ylbl="Re-implementation with Tensorflow"):
+  line=np.ceil(max(TN.max(),TF.max()))
+  plt.scatter(TN,TF,c='b',marker='.')
+  plt.plot(np.arange(line+1),np.arange(line+1),'-k')
+  plt.text(line_len-1, line_len-1, 'y = x',
+         rotation=45,
+         horizontalalignment='center',
+         verticalalignment='top',
+         multialignment='center')
+  plt.title(titletxt)
+  plt.xlabel(xlbl)
+  plt.ylabel(ylbl)
+  plt.show()
