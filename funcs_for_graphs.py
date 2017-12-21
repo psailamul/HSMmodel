@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from visualization import *
-
+SEED = 13
 
 # functions for data visualization
 

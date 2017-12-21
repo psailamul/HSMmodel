@@ -89,8 +89,9 @@ def TN_TF_Rsquare(TN, TF):
   SSres = np.sum(np.power(err,2)) #Residual sum of square
   return 1-np.true_divide(SSres, SStot)
 
-def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementation with Theano',ylbl="Re-implementation with Tensorflow"):
+def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementation with Theano',ylbl="Re-implementation with Tensorflow",RETURN = False):
   line=np.ceil(max(TN.max(),TF.max()))
+  fig_handle =plt.figure()
   plt.scatter(TN,TF,c='b',marker='.')
   plt.plot(np.arange(line+1),np.arange(line+1),'-k')
   plt.text(line_len-1, line_len-1, 'y = x',
@@ -101,49 +102,13 @@ def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementat
   plt.title(titletxt)
   plt.xlabel(xlbl)
   plt.ylabel(ylbl)
-  plt.show()
-
-def plot_TN_TF_withR2(TN,TF,set_name='validation',SEED=SEED):
-  line_len = max(np.ceil(TN.max()),np.ceil(TF.max()))
-
-  #All cells
-  all_TN = np.reshape(TN,[-1])
-  all_TF = np.reshape(TF,[-1])
-  r_sqr = TN_TF_Rsquare(all_TN, all_TF)
-  plt.scatter(all_TN,all_TF)
-  plt.plot(np.arange(line_len+1),np.arange(line_len+1),'k')
-  plt.text(line_len-1, line_len-1, 'y = x',
-           rotation=45,
-           horizontalalignment='center',
-           verticalalignment='top',
-           multialignment='center')
-  plt.title("Predicted Responses from %s set when seed = %g\nR^2 = %f"%(set_name,SEED,r_sqr))
-  plt.xlabel("Antolik's implementation (Theano)")
-  plt.ylabel("Re-implementation with Tensorflow")
-  plt.show()
-
-def plot_seeds_withR2(S1,S2,set_name='validation',region='3',seeds =('13','0'), implementation = 'Antolik''s implementation'):
-
-  line_len = max(np.ceil(S1.max()),np.ceil(S2.max()))
-
-  #All cells
-  all_S1 = np.reshape(S1,[-1])
-  all_S2 = np.reshape(S2,[-1])
-  r_sqr = TN_TF_Rsquare(all_S1, all_S2)
-  plt.scatter(all_S1,all_S2)
-  plt.plot(np.arange(line_len+1),np.arange(line_len+1),'k')
-  plt.text(line_len-1, line_len-1, 'y = x',
-           rotation=45,
-           horizontalalignment='center',
-           verticalalignment='top',
-           multialignment='center')
-  plt.title("Predicted Responses from %s set in region = %s\nR^2 = %f"%(set_name,region,r_sqr))
-  plt.xlabel("%s seed: %s"%(implementation,seeds[0]))
-  plt.ylabel("%s seed: %s"%(implementation,seeds[1]))
-  plt.show()
+  if RETURN:
+    return fig_handle
+  else:
+    plt.show()
 
 # ############# Setting ###############
-SAVEFIG=False
+SAVEFIG=True
 SEED=13
 FIG_HANDLES=[]
 FIG_NAMES=[]
@@ -265,32 +230,50 @@ for ss in seed_list:
     TF_TR_pred_checkseed[ss] = TF_checkSeed[ss]['TR_1st_pred_response'] # predicted response after train
     TF_VLD_pred_checkseed[ss] = TF_checkSeed[ss]['VLD_1st_ypredict'] #predicted response for validation set
     
-
+############################################################################################################################
 # #############  Comparison ############## 
-#Setting 
-Region = '1'
-Seed = 13
-
-"""
 #Comparison details
 
-#Within-model comparison 
-# seed =13 , all reguons
-response1 =TF_TR_pred_response[Region]
-response2 =
-description = 
-# region = 3, seed = 0, 13, 13-2
 
 #Between-model comparison  TN-TF
-# seed =13 , all reguons
+# seed =13 , all regions 
+# --- R^2 between TN&TF scatter all response
+# --- R^2 between TN & TF (per cell) distribution 
+R2_all_regions = {}
+for i in range(NUM_REGIONS):
+  rg = str(i+1)
+  setname ='training'
+  response1 =Theano_TR_pred_response[rg]
+  response2 =TF_TR_pred_response[rg]
+  r_sqr = TN_TF_Rsquare(response1, response2)
+  titletxt = "Region#%s: Predicted responses from %s set\nR^2 = %f"%(rg,setname,r_sqr)
+  xlbl='Antolik''s implementation with Theano'
+  ylbl="Re-implementation with Tensorflow"
+  plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl)
+  R2_all_regions[rg] = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(response1.T,response2.T)]
+  plt.hist(R2_all_regions[rg],50)
+  plt.show()
+
+# region = 3, seed = 0, 13, 13-2
+all_cells = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(TN.T,TF.T)]
+fig=compare_corr_all_regions(Theano_VLD_pred_response,TF_VLD_pred_response, TNTF_vld_corr, stats_param='max', titletxt='Theano&TensorFlow :: Validation Set', RETURN=True)
+FIG_HANDLES.append(fig); FIG_NAMES.append('Z0_TNTF_VLD_fig_max')
+if(SAVEFIG):
+    for fignum in range(len(FIG_HANDLES)):
+        fhandle =FIG_HANDLES[fignum]
+        fname=FIG_NAMES[fignum]
+        fhandle.savefig(Fig_fold+fname+'.png')
+
+#Within-model comparison 
+# seed =13 , all regions
 response1 =TF_TR_pred_response[Region]
 response2 =Theano_TR_pred_response
 description = 
 # region = 3, seed = 0, 13, 13-2
-response1 =
-response2 = 
-description =
-"""
+response1 =''
+response2 = ''
+description =''
+
 
 TF=TF_TR_pred_response['3']
 TN=Theano_TR_pred_response['3']
@@ -312,18 +295,91 @@ plt.xlabel("Antolik's implementation (Theano)")
 plt.ylabel("Re-implementation with Tensorflow")
 plt.show()
 
+R2_all={}
+for s1 in seed_list:
+  R2_all[s1] ={}
+  for s2 in seed_list:
+    setname ='validation'
+    response1 =TN_VLD_pred_checkseed[s1]
+    response2 =TF_VLD_pred_checkseed[s2]
+    r_sqr = TN_TF_Rsquare(response1, response2)
+    titletxt = "Predicted responses from %s set\nR^2 = %f"%(setname,r_sqr)
+    xlbl="Theano Seed:%s"%s1
+    ylbl="Tensorflow Seed:%s"%s2
+    fhandle=plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl, RETURN=True)
+    R2_all[s1][s2] = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(response1.T,response2.T)]
+    fname = "Check_seed_VLD_TN%s_TF%s"%(s1,s2)
+    fhandle.savefig(Fig_fold+fname+'.png')
+    plt.show()
+
+corr_all={}
+for s1 in seed_list:
+  corr_all[s1] ={}
+  for s2 in seed_list:
+    setname ='validation'
+    response1 =TN_VLD_pred_checkseed[s1]
+    response2 =TF_VLD_pred_checkseed[s2]
+    corr = computeCorr_flat(response1,response2)
+    print "TN:%s TF:%s corr = %f"%(s1,s2,corr)
+    corr_all[s1][s2] = corr
+
+
+corr_TN={}
+for s1 in seed_list:
+  corr_TN[s1] ={}
+  for s2 in seed_list:
+    setname ='validation'
+    response1 =TN_VLD_pred_checkseed[s1]
+    response2 =TN_VLD_pred_checkseed[s2]
+    corr = computeCorr_flat(response1,response2)
+    print "TN:%s TN:%s corr = %f"%(s1,s2,corr)
+    corr_TN[s1][s2] = corr
+corr_TN={}
+for s1 in seed_list:
+  corr_TN[s1] ={}
+  for s2 in seed_list:
+    setname ='validation'
+    response1 =TN_VLD_pred_checkseed[s1]
+    response2 =TN_VLD_pred_checkseed[s2]
+    corr = computeCorr(response1,response2)
+    print "TN:%s TN:%s corr = %f"%(s1,s2,corr.mean())
+    corr_TN[s1][s2] = corr.mean()
+
+corr_TF={}
+for s1 in seed_list:
+  corr_TF[s1] ={}
+  for s2 in seed_list:
+    setname ='validation'
+    response1 =TF_VLD_pred_checkseed[s1]
+    response2 =TF_VLD_pred_checkseed[s2]
+    corr = computeCorr_flat(response1,response2)
+    print "TF:%s TF:%s corr = %f"%(s1,s2,corr)
+    corr_TF[s1][s2] = corr
+
+
+####### DELETE
+    response1 =TN_VLD_pred_checkseed['13']
+    #response2 =TF_VLD_pred_checkseed['13']
+    response2=response1.copy()
+    r_sqr = TN_TF_Rsquare(response1, response2)
+    titletxt = "Predicted responses from %s set\nR^2 = %f"%(setname,r_sqr)
+    xlbl="Theano Seed:%s"%'13'
+    ylbl="Tensorflow Seed:%s"%'13'
+    fhandle=plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl, RETURN=False)
+    plt.show()
+
+plot_seeds_withR2(TF_TR_pred_checkseed['13'],TF_TR_pred_checkseed['13-2'],set_name='training',region='3',seeds =('13','13-2'), implementation = 'Re-implementation with Tensorflow')
+
+plot_seeds_withR2(TN_TR_pred_checkseed['13'],TN_TR_pred_checkseed['13-2'],set_name='training',region='3',seeds =('13','13-2'), implementation = 'Antolik''s implementation')
+
+
+plot_seeds_withR2(TF_VLD_pred_checkseed['13'],TF_VLD_pred_checkseed['13-2'],set_name='training',region='3',seeds =('13','13-2'), implementation = 'Re-implementation with Tensorflow')
+
+plot_seeds_withR2(TN_VLD_pred_checkseed['13'],TN_VLD_pred_checkseed['13-2'],set_name='training',region='3',seeds =('13','13-2'), implementation = 'Antolik''s implementation')
 
 
 
-
-
-plot_seeds_withR2(TF_TR_pred_checkseed['13'],TF_TR_pred_checkseed['13-2'],set_name='training',region='3',seeds =('13','13-2'), implementation = 'Antolik''s implementation')
-
-plot_seeds_withR2(TN_TR_pred_checkseed['13'],TF_TR_pred_checkseed['13'],set_name='training',region='3',seeds =('13','13'), implementation = 'Antolik''s implementation')
-
-
-
-plot_seeds_withR2(TF_VLD_pred_checkseed['0'],TN_VLD_pred_checkseed['13'],set_name='training',region='3',seeds =('13','13'), implementation = 'Antolik''s implementation')
+plot_seeds_withR2(TN_VLD_pred_checkseed['13'],TN_VLD_pred_checkseed['13-2'],seeds =('0','13'), implementation ='')
 
 
 cell =2
@@ -360,16 +416,22 @@ plot_act_of_max_min_corr(report_txt, pred_response,vld_set,vld_corr, PLOT=True,Z
 
 
 
-def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementation with Theano',ylbl="Re-implementation with Tensorflow"):
-  line=np.ceil(max(TN.max(),TF.max()))
-  plt.scatter(TN,TF,c='b',marker='.')
-  plt.plot(np.arange(line+1),np.arange(line+1),'-k')
-  plt.text(line_len-1, line_len-1, 'y = x',
-         rotation=45,
-         horizontalalignment='center',
-         verticalalignment='top',
-         multialignment='center')
-  plt.title(titletxt)
-  plt.xlabel(xlbl)
-  plt.ylabel(ylbl)
-  plt.show()
+def computeCorr_flat(response1,response2):
+    """
+    Compute correlation between two predicted activity flatten version
+    """
+    if len(response1.shape) >1:
+      response1 = response1.flatten()
+    if len(response2.shape) >1:
+      response2 = response2.flatten()
+    if np.all(response1[:]==0) & np.all(response2[:]==0):
+        corr=1.
+    elif not(np.all(response1[:]==0) | np.all(response2[:]==0)):
+        # /!\ To prevent errors due to very low values during computation of correlation
+        if abs(response1[:]).max()<1:
+            response1[:]=response1[:]/abs(response1[:]).max() 
+        if abs(response2[:]).max()<1:
+            response2[:]=response2[:]/abs(response2[:]).max()    
+        corr=pearsonr(response1,response2)[0]
+            
+    return corr
