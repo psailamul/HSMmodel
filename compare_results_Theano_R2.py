@@ -94,7 +94,7 @@ def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementat
   fig_handle =plt.figure()
   plt.scatter(TN,TF,c='b',marker='.')
   plt.plot(np.arange(line+1),np.arange(line+1),'-k')
-  plt.text(line_len-1, line_len-1, 'y = x',
+  plt.text(line-1, line-1, 'y = x',
          rotation=45,
          horizontalalignment='center',
          verticalalignment='top',
@@ -106,6 +106,26 @@ def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementat
     return fig_handle
   else:
     plt.show()
+
+def computeCorr_flat(response1,response2):
+    """
+    Compute correlation between two predicted activity flatten version
+    """
+    if len(response1.shape) >1:
+      response1 = response1.flatten()
+    if len(response2.shape) >1:
+      response2 = response2.flatten()
+    if np.all(response1[:]==0) & np.all(response2[:]==0):
+        corr=1.
+    elif not(np.all(response1[:]==0) | np.all(response2[:]==0)):
+        # /!\ To prevent errors due to very low values during computation of correlation
+        if abs(response1[:]).max()<1:
+            response1[:]=response1[:]/abs(response1[:]).max() 
+        if abs(response2[:]).max()<1:
+            response2[:]=response2[:]/abs(response2[:]).max()    
+        corr=pearsonr(response1,response2)[0]
+            
+    return corr
 
 # ############# Setting ###############
 SAVEFIG=True
@@ -160,7 +180,7 @@ print "Download Data set complete: Time %s" %(time.time() - download_time)
 #1 seed =13 , all reguons
 #2 region =3, seed = 0, 13,13-2
 TN_checkSeed ={}; TF_checkSeed = {}
-seed_list=['0','13','13-2']
+seed_list=['1-0','13','13-1','13-2']
 for ss in seed_list:
     TN_checkSeed[ss]=None
     TF_checkSeed[ss]=None
@@ -184,7 +204,7 @@ for dir_item in all_dirs:
         Theano_outputs[rg_id]=tmpitem.item()
         Theano_outputs[rg_id]['hsm']=hsm[rg_id]
         Ks[rg_id]=Theano_outputs[rg_id]['x']
-      if rg_id=='3':
+      if rg_id=='1':
         TN_checkSeed[seed_id]=tmpitem.item()
         TN_checkSeed[seed_id]['hsm']=hsm[rg_id]
         Ks_seeds[seed_id]=TN_checkSeed[seed_id]['x']
@@ -192,12 +212,19 @@ for dir_item in all_dirs:
     elif str.startswith(dir_item,'AntolikRegion'): # Tensorflow
       rg_id=get_param_from_fname(dir_item, 'AntolikRegion')
       seed_id=get_param_from_fname(dir_item, 'SEED')
+      trial_id = get_param_from_fname(dir_item, 'trial')
       tmpdat=load_TensorFlow_outputs('', data_dir, dir_item)
-      assert tmpdat is not None 
-      if seed_id=='13':
-        TensorFlow_outputs[rg_id]=tmpdat
-      if rg_id =='3':
-        TF_checkSeed[seed_id] = tmpdat
+      try:
+        assert tmpdat is not None 
+        if seed_id=='13' and trial_id is None:
+          TensorFlow_outputs[rg_id]=tmpdat
+        if rg_id =='1':
+          if trial_id is not None:
+            seed_id += '-'+trial_id
+          TF_checkSeed[seed_id] = tmpdat
+      except:
+        break
+
     else:
       continue
 
@@ -221,7 +248,7 @@ TN_TR_pred_checkseed={ss:None for ss in seed_list}
 TN_VLD_pred_checkseed={ss:None for ss in seed_list}
 TF_TR_pred_checkseed={ss:None for ss in seed_list}
 TF_VLD_pred_checkseed={ss:None for ss in seed_list}
-id ='3'
+id ='1'
 for ss in seed_list:
     #Theano
     TN_TR_pred_checkseed[ss] = HSM.response(hsm[id],train_input[id],Ks_seeds[ss]) # predicted response after train
@@ -263,7 +290,7 @@ if(SAVEFIG):
         fhandle =FIG_HANDLES[fignum]
         fname=FIG_NAMES[fignum]
         fhandle.savefig(Fig_fold+fname+'.png')
-
+"""
 #Within-model comparison 
 # seed =13 , all regions
 response1 =TF_TR_pred_response[Region]
@@ -273,7 +300,7 @@ description =
 response1 =''
 response2 = ''
 description =''
-
+"""
 
 TF=TF_TR_pred_response['3']
 TN=Theano_TR_pred_response['3']
@@ -416,22 +443,3 @@ plot_act_of_max_min_corr(report_txt, pred_response,vld_set,vld_corr, PLOT=True,Z
 
 
 
-def computeCorr_flat(response1,response2):
-    """
-    Compute correlation between two predicted activity flatten version
-    """
-    if len(response1.shape) >1:
-      response1 = response1.flatten()
-    if len(response2.shape) >1:
-      response2 = response2.flatten()
-    if np.all(response1[:]==0) & np.all(response2[:]==0):
-        corr=1.
-    elif not(np.all(response1[:]==0) | np.all(response2[:]==0)):
-        # /!\ To prevent errors due to very low values during computation of correlation
-        if abs(response1[:]).max()<1:
-            response1[:]=response1[:]/abs(response1[:]).max() 
-        if abs(response2[:]).max()<1:
-            response2[:]=response2[:]/abs(response2[:]).max()    
-        corr=pearsonr(response1,response2)[0]
-            
-    return corr
