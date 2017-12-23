@@ -34,11 +34,13 @@ def main():
     Region_num=str(REGION)
     seed=SEED; lgn=NUM_LGN; hlsr=HLSR
     runID = RESTART_TRIAL
-    curr = os.getcwd()
 
-
-    training_inputs=np.load(os.path.join(curr,'Data/region'+Region_num+'/training_inputs.npy'))
-    training_set=np.load(os.path.join(curr,'Data/region'+Region_num+'/training_set.npy'))
+    DATA_LOC = "Data/" #"/users/psailamu/data/psailamu/AntolikData/"
+    OUTPUT_DOC = "scratch/HSMmodel/"
+    SUMMARY_DIR = 'scratch/HSMmodel/SciPy_SEEDnumpy/'
+    
+    training_inputs=np.load(os.path.join(DATA_LOC,'region'+Region_num+'/training_inputs.npy'))
+    training_set=np.load(os.path.join(DATA_LOC,'region'+Region_num+'/training_set.npy'))
     print "Download complete: Time %s" %(time.time() - download_time)
     call_time = time.time()
 
@@ -56,9 +58,8 @@ def main():
 
     MAXITER=100000
     Code='SciPytestSeed'
-    HOST, PATH = get_host_path(HOST=True, PATH=True)
-    #SUMMARY_DIR = 'TFtrainingSummary/SciPy_maxiter_grad/'
-    SUMMARY_DIR = 'TFtrainingSummary/SciPy_SEEDnumpy/'
+    HOST = 'ccv'
+
     #c(Ks,success,c)=fmin_tnc(func ,Ks,fprime=hsm.der(),bounds=hsm.bounsd,maxfun = 100000,messages=0)  # https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.optimize.fmin_tnc.html
     out=minimize(func ,Ks,method='TNC',jac=hsm.der(),bounds=hsm.bounds,options={'maxiter':MAXITER,'disp':True})
 
@@ -72,9 +73,9 @@ def main():
 
     print "Finish training %s" %(runtime)
     if PLOT_CORR_STATS:
-        raw_vld_set=np.load(os.path.join(curr,'Data/region'+Region_num+'/raw_validation_set.npy'))
-        vldinput_set=np.load(os.path.join(curr,'Data/region'+Region_num+'/validation_inputs.npy'))
-        vld_set=np.load(os.path.join(curr,'Data/region'+Region_num+'/validation_set.npy'))
+        raw_vld_set=np.load('Data/region'+Region_num+'/raw_validation_set.npy')
+        vldinput_set=np.load('Data/region'+Region_num+'/validation_inputs.npy')
+        vld_set=np.load('Data/region'+Region_num+'/validation_set.npy')
 
         response = HSM.response(hsm,training_inputs,Ks) # predicted response after train
 

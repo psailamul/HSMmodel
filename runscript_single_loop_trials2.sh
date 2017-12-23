@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for i in `seq 1 5`;
+for i in `seq 11 14`;
 do
     echo Current = "$i"
     echo REGION=1 SEED=$i RESTART_TRIAL=0
