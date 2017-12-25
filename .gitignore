@@ -11,6 +11,7 @@ save_trained_HSM.meta
 
 # folders #
 #################
+Seed_LOG/
 Allen_data_170513/
 Allen_Keras_output/
 Figures/
