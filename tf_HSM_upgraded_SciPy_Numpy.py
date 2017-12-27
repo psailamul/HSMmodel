@@ -4,7 +4,6 @@ import param
 from numpy.random import rand, seed
 
 
-      
 def logistic_loss(x,t=0.0, coef=1.0):
   return coef * tf.log(1 + tf.exp(coef*(x-t)))
   
@@ -21,7 +20,6 @@ class tf_HSM():
 
       images-> LGN -> 2-layer MLP
       LGN: Any vision feature extractor. This model uae different of gaussian (DoG) here
-
 
     Output:
       train_op : Optimizer from Tensor Flow 
@@ -47,7 +45,6 @@ class tf_HSM():
       self.initialized_value_list=[]
       self.initializers_all_params={}
       self.model_dtype=tf.float64
-
       
     def construct_free_params(self):
       
@@ -85,10 +82,6 @@ class tf_HSM():
         dtype=self.model_dtype, 
         initializer=self.initializers['output_layer_threshold'],
         trainable=True)
-
-
-
-
 
     def DoG(self, x, y, sc, ss, rc, rs):
       # Passing the parameters for a LGN neuron
