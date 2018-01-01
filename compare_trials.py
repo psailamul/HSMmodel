@@ -132,6 +132,7 @@ def computeCorr_flat(response1,response2):
             
     return corr   
     
+   
 # ############# Setting ###############
 SAVEFIG=False
 dt_stamp = re.split(
@@ -185,63 +186,39 @@ for i in range(NUM_REGIONS):
     vld_set[id]=np.load(os.path.join(runpath,'Data/region'+id+'/validation_set.npy'))
 
 print "Download Data set complete: Time %s" %(time.time() - download_time)
-
+########################################################################
+# Check seed=13 with different trials  (0 - 5, the order is arbitrary)
+########################################################################
+######   Check   Trials  
+region = '1'
+curr_seed = 13
+trial_list = [0,1,2,3,4]
+TN_across_trial ={}
+TF_across_trial ={}
+Ks_seed_across_trial ={}
+lgn=9; hlsr=0.2
 rg1_train_input = train_input['1']
 rg1_train_set = train_set['1']
 rg1_vldinput_set = vldinput_set['1']
 rg1_vld_set = vld_set['1']
 
-########################################################################
-# Check same seed with different trials 
-########################################################################
 
-seed_list = np.arange(50) +1
-curr_trial = 0
-TN_across_seeds ={}
-TF_across_seeds ={}
-Ks_across_seeds ={}
-lgn=9; hlsr=0.2
 hsm = HSM(rg1_train_input,rg1_train_set) 
 hsm.num_lgn = lgn 
 hsm.hlsr = hlsr      
-for ss in seed_list:
+for tr in trial_list:
     #Theano
-    fname = TN_filename(ss,curr_trial) 
-    this_item = fname[:-4] #remove.npy
+    fname = TN_filename(curr_seed,tr) 
+    this_item = fname[:-4] #remove.npy   
     tmpitem = np.load(os.path.join(data_dir,fname))
-    TN_across_seeds[str(ss)] = tmpitem.item()
-    TN_across_seeds[str(ss)]['hsm']=hsm
-    Ks_across_seeds[str(ss)]=TN_across_seeds[str(ss)]['x']
+    TN_across_trial[str(tr)] = tmpitem.item()
+    TN_across_trial[str(tr)]['hsm']=hsm
+    Ks_seed_across_trial[str(tr)]=TN_across_trial[str(tr)]['x']
     #Tensorflow
-    TF_all_folders = glob.glob(os.path.join(data_dir, TF_filename(ss,curr_trial) +'*'))
-    for this_item in TF_all_folders: 
-        tmpdat=load_TensorFlow_outputs('', data_dir, this_item,split_path=False)
-        if tmpdat is not None:
-            break
-    if tmpdat is None:
-        print "Error: File not found\t Tensorflow seed = %g"%(ss)
-        print this_item
-    TF_across_seeds[str(ss)]  = tmpdat
-   
-"""
-# Check files
-for ss in seed_list:
-    #Theano
-    fname = TN_filename(ss,curr_trial) 
-    this_item = fname[:-4] #remove.npy
-    check_file = glob.glob(os.path.join(data_dir,fname))
-    if check_file is None:
-        print "Error: File not found\t Theano seed = %g"%(ss)
-        print this_item
-    TF_all_folders = glob.glob(os.path.join(data_dir, TF_filename(ss,curr_trial) +'*'))
-    for this_item in TF_all_folders: 
-        tmpdat=load_TensorFlow_outputs('', data_dir, this_item,split_path=False)
-        if tmpdat is not None:
-            break
-    if tmpdat is None:
-        print "Error: File not found\t Tensorflow seed = %g"%(ss)
-        print TF_all_folders
-"""
+    TF_all_folders = glob.glob(os.path.join(data_dir, TF_filename(curr_seed,tr) +'*'))
+    this_item = TF_all_folders[0]    
+    tmpdat=load_TensorFlow_outputs('', data_dir, this_item,split_path=False)
+    TF_across_trial[str(tr)]  = tmpdat
     
     
 #Get responses
@@ -257,74 +234,52 @@ hsm_vld = HSM(rg1_vldinput_set,rg1_vld_set)
 hsm_vld.num_lgn = lgn 
 hsm_vld.hlsr = hlsr
 
-for ss in seed_list:
+for tr in trial_list:
     #Theano
-    Theano_TR_pred_response[str(ss)] = HSM.response(hsm_tr,rg1_train_input,Ks_across_seeds[str(ss)]) # predicted response after train
-    Theano_VLD_pred_response[str(ss)] = HSM.response(hsm_vld,rg1_vldinput_set,Ks_across_seeds[str(ss)]) #predicted response for validation set
+    Theano_TR_pred_response[str(tr)] = HSM.response(hsm_tr,rg1_train_input,Ks_seed_across_trial[str(tr)]) # predicted response after train
+    Theano_VLD_pred_response[str(tr)] = HSM.response(hsm_vld,rg1_vldinput_set,Ks_seed_across_trial[str(tr)]) #predicted response for validation set
     #TensorFlow
-    TF_TR_pred_response[str(ss)] = TF_across_seeds[str(ss)]['TR_1st_pred_response'] # predicted response after train
-    TF_VLD_pred_response[str(ss)] = TF_across_seeds[str(ss)]['VLD_1st_ypredict'] #predicted response for validation set
+    TF_TR_pred_response[str(tr)] = TF_across_trial[str(tr)]['TR_1st_pred_response'] # predicted response after train
+    TF_VLD_pred_response[str(tr)] = TF_across_trial[str(tr)]['VLD_1st_ypredict'] #predicted response for validation set
 
-R2_training=[]
-R2_VLD =[]
-for ss in seed_list:
-    id = str(ss)
-    #Training set
-    setname ='TRAINING'
-    response1 =Theano_TR_pred_response[id]
-    response2 =TF_TR_pred_response[id]
-    r_sqr = TN_TF_Rsquare(response1, response2)
-    R2_training.append(r_sqr)
-    #Test set
-    setname ='TEST'
-    response1 =Theano_VLD_pred_response[id]
-    response2 =TF_VLD_pred_response[id]
-    r_sqr = TN_TF_Rsquare(response1, response2)
-    R2_VLD.append(r_sqr)
-    
-    
-if(False):
-    R2_all_regions = {}
-    #for ss in seed_list:
-    #ss = np.argmax(R2_training)
-    ss = np.argmin(R2_training)
-    id = str(ss)
-    setname ='min TRAINING'
-    response1 =Theano_TR_pred_response[id]
-    response2 =TF_TR_pred_response[id]
-    r_sqr = TN_TF_Rsquare(response1, response2)
-    titletxt = "Seed=%g, Trial#%s: Predicted responses from %s set\nR^2 = %f"%(curr_seed, id,setname,r_sqr)
-    xlbl='Antolik''s implementation with Theano'
-    ylbl="Re-implementation with Tensorflow"
 
-    fig = plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl, RETURN=True)
-    R2_all_regions[id] = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(response1.T,response2.T)]
-    # plt.figure()
-    # plt.hist(R2_all_regions[id],50)
-    # plt.title(titletxt)
-
-    #ss = np.argmax(R2_VLD)
-    ss = np.argmin(R2_VLD)
-    id =str(ss)
-    setname ='min VALIDATION'
-    response1 =Theano_VLD_pred_response[id]
-    response2 =TF_VLD_pred_response[id]
-    r_sqr = TN_TF_Rsquare(response1, response2)
-    titletxt = "Seed=%g, Trial#%s: Predicted responses from %s set\nR^2 = %f"%(curr_seed, id,setname,r_sqr)
-    xlbl='Antolik''s implementation with Theano'
-    ylbl="Re-implementation with Tensorflow"
-    fig =plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl,RETURN=True)
-    R2_all_regions[id] = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(response1.T,response2.T)]
-    # plt.figure()
-    # plt.hist(R2_all_regions[id],50)
-    # plt.title(titletxt)
-    plt.show()
-     
-    from scipy import stats
-    [statistic, pvalue] = stats.ttest_rel(response1, response2)
-
+R2_all_regions = {}
+for tr in trial_list:
+  id = str(tr)
+  setname ='TRAINING'
+  response1 =Theano_TR_pred_response[id]
+  response2 =TF_TR_pred_response[id]
+  r_sqr = TN_TF_Rsquare(response1, response2)
+  titletxt = "Seed=%g, Trial#%s: Predicted responses from %s set\nR^2 = %f"%(curr_seed, id,setname,r_sqr)
+  xlbl='Antolik''s implementation with Theano'
+  ylbl="Re-implementation with Tensorflow"
+  
+  fig = plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl, RETURN=True)
+  R2_all_regions[id] = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(response1.T,response2.T)]
+  # plt.figure()
+  # plt.hist(R2_all_regions[id],50)
+  # plt.title(titletxt)
+  
+  setname ='VALIDATION'
+  response1 =Theano_VLD_pred_response[id]
+  response2 =TF_VLD_pred_response[id]
+  r_sqr = TN_TF_Rsquare(response1, response2)
+  titletxt = "Seed=%g, Trial#%s: Predicted responses from %s set\nR^2 = %f"%(curr_seed, id,setname,r_sqr)
+  xlbl='Antolik''s implementation with Theano'
+  ylbl="Re-implementation with Tensorflow"
+  fig =plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl,RETURN=True)
+  R2_all_regions[id] = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(response1.T,response2.T)]
+  # plt.figure()
+  # plt.hist(R2_all_regions[id],50)
+  # plt.title(titletxt)
+  plt.show()
+ 
+ from scipy import stats
+[statistic, pvalue] = stats.ttest_rel(response1, response2)
 
 ########################################################################
-# Compute correlation coefficient
+# Check same seed with different trials 
 ########################################################################
-# 1. corr ---- mea
+
+SEED_LIST = np.arange(50) +1
+TRIAL_LIST = 0

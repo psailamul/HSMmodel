@@ -7,4 +7,3 @@ do
     CUDA_VISIBLE_DEVICES=3 python tf_HSM_main_Scipy_jac_np_multrials.py REGION=1 SEED=$i RESTART_TRIAL=0 |& tee -a "Seed_LOG/HSM_Tensorflow_region1_seed${i}_trial0.txt"
 done
 
- cp -rf AntolikRegion1_SciPy_jac_npSeed_MaxIter100000_itr1_SEED39* /media/data_cifs/pachaya/FYPsim/HSMmodel/TFtrainingSummary/SciPy_SEEDnumpy/

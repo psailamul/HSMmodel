@@ -134,13 +134,13 @@ class TheanoVisionModel(param.Parameterized):
             g_K = T.grad(self.model, self.K) #T.grad(scalar cost, variable to compute gradient)
             return theano.function(inputs=[self.K], outputs=g_K,mode='FAST_RUN')
 
-        def response(self,X,kernel):
+        def response(self,X,kernel,mode='FAST_RUN'):
             """
             This function takes as input some model inputs, and a parametrization of the model, and returns the
             response of the model, with respect to the parametrization and inputs.
             """
             self.X.set_value(X)
-            resp = theano.function(inputs=[self.K], outputs=self.model_output,mode='FAST_RUN')
+            resp = theano.function(inputs=[self.K], outputs=self.model_output,mode=mode)
             return resp(kernel)
 
         def construct_of(self,inn,of):

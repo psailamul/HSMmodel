@@ -62,9 +62,25 @@ def build_hsm_for_Theano(REGION_NUM=3, seed=13, lgn=9, hlsr=0.2): # May not need
         hsm.num_lgn = lgn 
         hsm.hlsr = hlsr
         ALL_HSM[Region_num]=hsm
-        rg+=1
+        rg+=1 
     return ALL_HSM
-
+def concat_flatten_regions(input_data):
+    return_data = []
+    for k,v in input_data.iteritems():
+        if len(v.shape) >1:
+            input_data[k] = v.flatten()
+        return_data.append(input_data[k])
+        print k
+        print v.shape
+        print "---------"
+        
+    return np.concatenate(return_data)
+    
+def concat_regions(input_data):
+    return_data = np.concatenate((input_data['1'],input_data['2']), axis=1)
+    return_data = np.concatenate((return_data,input_data['3']), axis=1)
+    
+    return return_data
 # ############# Setting ###############
 SAVEFIG=False
 SEED=13
@@ -123,8 +139,8 @@ for dir_item in all_dirs:
     elif str.startswith(dir_item,'AntolikRegion'): # Tensorflow
       rg_id=get_param_from_fname(dir_item, 'AntolikRegion'); 
       tmpdat=load_TensorFlow_outputs(current_path, data_dir, dir_item)
-      assert tmpdat is not None 
-      TensorFlow_outputs[rg_id]=tmpdat
+      if tmpdat is not None:
+        TensorFlow_outputs[rg_id]=tmpdat
     else:
       continue
 
@@ -155,6 +171,54 @@ for i in range(NUM_REGIONS):
     TN_vld_corr[id]=computeCorr(Theano_VLD_pred_response[id],vld_set[id])
     TF_corr[id] = computeCorr(TF_TR_pred_response[id],train_set[id])
     TF_vld_corr[id]=computeCorr(TF_VLD_pred_response[id],vld_set[id])
+    
+# train_set_all = concat_flatten_regions(train_set)
+# TN_TR_pred_response_all = concat_flatten_regions(Theano_TR_pred_response)
+# TF_TR_pred_response_all = concat_regions(TF_TR_pred_response)
+# TN_all_corr =concat_regions(TN_corr)
+# TF_all_corr =concat_regions(TF_corr)
+
+vld_set_all = concat_regions(vld_set)
+TN_VLD_pred_response_all = concat_regions(Theano_VLD_pred_response)
+TF_VLD_pred_response_all = concat_regions(TF_VLD_pred_response)
+TN_vld_all_corr =concat_flatten_regions(TN_vld_corr)
+TF_vld_all_corr =concat_flatten_regions(TF_vld_corr)
+
+
+
+plot_act_of_max_min_corr(runcodestr='Original HSM', 
+                        yhat=TN_VLD_pred_response_all,
+                        train_set=vld_set_all,
+                        corr=TN_vld_all_corr, 
+                        PLOT=True,
+                        ZOOM=False)
+                        
+plot_act_of_max_min_corr(runcodestr='Reimplemented version', 
+                        yhat=TF_VLD_pred_response_all,
+                        train_set=vld_set_all,
+                        corr=TF_vld_all_corr, 
+                        PLOT=True,
+                        ZOOM=False)
+
+
+plot_corr_response_scatter(pred_response=TN_VLD_pred_response_all, 
+                vld_set=vld_set_all, 
+                corr_set=TN_vld_all_corr, 
+                stats_param='median',
+                titletxt='Original HSM', 
+                RETURN=False, 
+                datalabel1='Measured Response', 
+                datalabel2='Predicted Response')
+                
+plot_corr_response_scatter(pred_response=TF_VLD_pred_response_all, 
+                vld_set=vld_set_all, 
+                corr_set=TF_vld_all_corr, 
+                stats_param='median',
+                titletxt='Reimplemented version', 
+                RETURN=False, 
+                datalabel1='Measured Response', 
+                datalabel2='Predicted Response')
+    
 
 
 #Theano : Training Set
@@ -173,7 +237,7 @@ TF_TR_fig_med=compare_corr_all_regions(TF_TR_pred_response,train_set, TF_corr, s
 TF_VLD_fig_max=compare_corr_all_regions(TF_VLD_pred_response,vld_set, TF_vld_corr, stats_param='max', titletxt='TF :: 1st Validation Set', RETURN=True)
 TF_VLD_fig_med=compare_corr_all_regions(TF_VLD_pred_response,vld_set, TF_vld_corr, stats_param='median', titletxt='TF:: 1st Validation Set', RETURN=True)
 
-
+"""
 #TN & TF corr 
 TNTF_corr={}; TNTF_vld_corr={}
 for i in range(NUM_REGIONS):
@@ -195,6 +259,7 @@ combine_TNTF_vld_corr = np.concatenate((TNTF_vld_corr['1'], TNTF_vld_corr['2'],T
 plt.subplot(121); plt.hist(combine_TNTF_corr,normed=True); plt.xlim([0,1]); plt.title('Training set')
 plt.subplot(122); plt.hist(combine_TNTF_vld_corr,normed=True); plt.xlim([0,1]); plt.title('Validation set')
 plt.suptitle('Distribution of correlation coefficient between response from Theano and TensorFlow')
+"""
 
 # #############Combine all regions :: cdf ############## 
 # cumsum 
@@ -205,42 +270,41 @@ fig_TNVLD,Xs,Fs = cdf_allregions( TN_vld_corr, NUM_REGIONS=3, DType='Theano Vali
 fig_TFTR,Xs,Fs = cdf_allregions( TF_corr, NUM_REGIONS=3, DType='TensorFlow Training set : ', C_CODE=True, SHOW=True, RETURN=True)
 fig_TFVLD,Xs,Fs = cdf_allregions( TF_vld_corr, NUM_REGIONS=3, DType='TensorFlow Validation set : ', C_CODE=True, SHOW=True, RETURN=True)
 
-
+"""
 fig_TNTF_TR,Xs,Fs = cdf_allregions( TNTF_corr, NUM_REGIONS=3, DType='Training set of Theano and TensorFlow version: ', C_CODE=True, SHOW=True, RETURN=True)
 fig_TNTF_VLD,Xs,Fs = cdf_allregions( TNTF_vld_corr, NUM_REGIONS=3, DType='Validation set of Theano and TensorFlow version: ', C_CODE=True, SHOW=True, RETURN=True)
 
-
-#plot_corr_response_scatter(pred_response, vld_set, corr_set, stats_param='max',titletxt='', RETURN=False):
  
+if False:
+    #For FYP 
+    #Data , Theano, TF 
+    # Cell with median corr between TN and TF Median Cell#130 idx=139
+    #Label TN with data 
+    # Label TF with data
+    Theano_VLD_pred_response,vld_set, TN_vld_corr
+    TF_VLD_pred_response,vld_set, TF_vld_corr
 
-#For FYP 
-#Data , Theano, TF 
-# Cell with median corr between TN and TF Median Cell#130 idx=139
-#Label TN with data 
-# Label TF with data
-Theano_VLD_pred_response,vld_set, TN_vld_corr
-TF_VLD_pred_response,vld_set, TF_vld_corr
 
-
-    vld_set, 
-    Antolik_set
-    TF_set = 
-    N1=len(corr_set);
-    idx1 = N1/2-1 if N1%2==0 else (N1-1)/2
-    stat1=np.sort(corr_set)[idx1]
-datalabel1='Measured Response', datalabel2='Predicted Response'
+    # vld_set, 
+    # Antolik_set
+    # TF_set = 
+    # N1=len(corr_set);
+    # idx1 = N1/2-1 if N1%2==0 else (N1-1)/2
+    # stat1=np.sort(corr_set)[idx1]
+    # datalabel1='Measured Response'
+    # datalabel2='Predicted Response'
 
     fig, ax = plt.subplots()
     plt.subplot(2,1,1)
-    plt.plot(vld_set[:,idx1],'-ok',label='Measured Response)
+    plt.plot(vld_set[:,idx1],'-ok',label='Measured Response')
     plt.plot(pred_response[:, idx1],'--or',label='Predicted Response')
     plt.plot(pred_response[:, idx1],'--or',label='Predicted Response')
-    
+
     plt.ylabel('Response')
     plt.xlabel('Image #')
     plt.title("Cell#%g is the %s  neuron, R = %.5f, mean neuron has R = %.5f"%(idx1+1 ,stats_param,stat1, np.mean(corr_set)))
     plt.legend(loc=0)
-    
+
     plt.subplot(2,1,2)
     plt.scatter(vld_set[:,idx1], pred_response[:,idx1])
     N=np.ceil(np.max([np.max(pred_response[:,idx1]),np.max(vld_set[:,idx1])]))
@@ -251,17 +315,18 @@ datalabel1='Measured Response', datalabel2='Predicted Response'
     plt.title('Scatter plot of measured response and predicted response of cell#%g'%(idx1+1))
 
 
-if(SAVEFIG):
-    Tn_TR_fig_max.savefig(Fig_fold+"Tn_SEED%g_TR_max.png"%(SEED))
-    Tn_TR_fig_med.savefig(Fig_fold+"Tn_SEED%g_TR_med.png"%(SEED))
-    Tn_VLD_fig_max.savefig(Fig_fold+"Tn_SEED%g_VLD_max.png"%(SEED))
-    Tn_VLD_fig_med.savefig(Fig_fold+"Tn_SEED%g_VLD_med.png"%(SEED))
+    if(SAVEFIG):
+        Tn_TR_fig_max.savefig(Fig_fold+"Tn_SEED%g_TR_max.png"%(SEED))
+        Tn_TR_fig_med.savefig(Fig_fold+"Tn_SEED%g_TR_med.png"%(SEED))
+        Tn_VLD_fig_max.savefig(Fig_fold+"Tn_SEED%g_VLD_max.png"%(SEED))
+        Tn_VLD_fig_med.savefig(Fig_fold+"Tn_SEED%g_VLD_med.png"%(SEED))
 
-    TF_TR_fig_max.savefig(Fig_fold+"TF_SEED%g_TR_max.png"%(SEED))
-    TF_TR_fig_med.savefig(Fig_fold+"TF_SEED%g_TR_med.png"%(SEED))
-    TF_VLD_fig_max.savefig(Fig_fold+"TF_SEED%g_VLD_max.png"%(SEED))
-    TF_VLD_fig_med.savefig(Fig_fold+"TF_SEED%g_VLD_med.png"%(SEED))
+        TF_TR_fig_max.savefig(Fig_fold+"TF_SEED%g_TR_max.png"%(SEED))
+        TF_TR_fig_med.savefig(Fig_fold+"TF_SEED%g_TR_med.png"%(SEED))
+        TF_VLD_fig_max.savefig(Fig_fold+"TF_SEED%g_VLD_max.png"%(SEED))
+        TF_VLD_fig_med.savefig(Fig_fold+"TF_SEED%g_VLD_med.png"%(SEED))
 
 
 
 #    fig_hist.savefig(Fig_fold+sim_folder+sim_code+"_ResponseDist.png")
+"""

@@ -10,9 +10,7 @@ import os
 import re
 import time
 from datetime import datetime
-from HSM import HSM
 from funcs_for_graphs import *
-
 
 # # ############# Functions ###############
 def get_param_from_fname(fname, keyword):
@@ -22,6 +20,7 @@ def get_param_from_fname(fname, keyword):
             return prm[len(keyword):]
     else:
         print "WARNING:: KEYWORD NOT FOUND"
+        print "%s"%(keyword)
         return None
 def load_TensorFlow_outputs(current_path, data_dir, dir_item):
     dir_item+='/'
@@ -144,7 +143,7 @@ HOST, PATH =get_host_path(HOST=True,PATH=True)
 SUMMARY_DIR = 'TFtrainingSummary/SciPy_SEEDnumpy/'
 
 current_path = PATH
-data_dir = os.path.join(  current_path, "TFtrainingSummary/SciPy_SEEDnumpy/")
+data_dir = os.path.join( current_path, "TFtrainingSummary/SciPy_SEEDnumpy/")
 
 all_dirs = os.listdir(data_dir)
 
@@ -162,7 +161,7 @@ if SAVEFIG :
 # #############  Download Data Set ############## 
 download_time = time.time() #print "Download complete: Time %s" %(time.time() - download_time)
 runpath=get_host_path()
-NUM_REGIONS =3
+NUM_REGIONS =1
 train_input ={}; train_set={}; raw_vld_set={}; vldinput_set={}; vld_set={}
 
 for i in range(NUM_REGIONS):
@@ -180,7 +179,7 @@ print "Download Data set complete: Time %s" %(time.time() - download_time)
 #1 seed =13 , all reguons
 #2 region =3, seed = 0, 13,13-2
 TN_checkSeed ={}; TF_checkSeed = {}
-seed_list=['1-0','13','13-1','13-2']
+seed_list=['13','13-1','13-2']
 for ss in seed_list:
     TN_checkSeed[ss]=None
     TF_checkSeed[ss]=None
@@ -200,6 +199,7 @@ for dir_item in all_dirs:
       rg_id=get_param_from_fname(this_item, 'Rg');
       seed_id=get_param_from_fname(this_item, 'seed')      
       tmpitem = np.load(data_dir+dir_item)
+
       if seed_id == '13':
         Theano_outputs[rg_id]=tmpitem.item()
         Theano_outputs[rg_id]['hsm']=hsm[rg_id]
@@ -213,17 +213,18 @@ for dir_item in all_dirs:
       rg_id=get_param_from_fname(dir_item, 'AntolikRegion')
       seed_id=get_param_from_fname(dir_item, 'SEED')
       trial_id = get_param_from_fname(dir_item, 'trial')
-      tmpdat=load_TensorFlow_outputs('', data_dir, dir_item)
-      try:
-        assert tmpdat is not None 
-        if seed_id=='13' and trial_id is None:
-          TensorFlow_outputs[rg_id]=tmpdat
-        if rg_id =='1':
-          if trial_id is not None:
-            seed_id += '-'+trial_id
-          TF_checkSeed[seed_id] = tmpdat
-      except:
-        break
+      if rg_id =='1' and seed_id == '13':
+          tmpdat=load_TensorFlow_outputs('', data_dir, dir_item)
+          try:
+            assert tmpdat is not None 
+            if seed_id=='13' and trial_id is None:
+              TensorFlow_outputs[rg_id]=tmpdat
+            if rg_id =='1':
+              if trial_id is not None:
+                seed_id += '-'+trial_id
+              TF_checkSeed[seed_id] = tmpdat
+          except:
+            break
 
     else:
       continue

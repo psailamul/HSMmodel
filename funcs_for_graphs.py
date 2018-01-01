@@ -1,10 +1,53 @@
 #visualization
-
 import numpy as np
 import matplotlib.pyplot as plt
-from visualization import *
+import matplotlib.image as mpimg
+import time
+from HSM import HSM
+from get_host_path import get_host_path
+import os
+import re
+from scipy.stats import pearsonr
+import glob
+import param
+
 SEED = 13
 
+
+
+def computeCorr(pred_act,responses):
+    """
+    Compute correlation between predicted and recorded activity for each cell
+    """
+    #import ipdb; ipdb.set_trace()
+    num_pres,num_neurons = np.shape(responses)
+    corr=np.zeros(num_neurons)
+    
+    for i in xrange(0,num_neurons):
+        if np.all(pred_act[:,i]==0) & np.all(responses[:,i]==0):
+            corr[i]=1.
+        elif not(np.all(pred_act[:,i]==0) | np.all(responses[:,i]==0)):
+            # /!\ To prevent errors due to very low values during computation of correlation
+            if abs(pred_act[:,i]).max()<1:
+                pred_act[:,i]=pred_act[:,i]/abs(pred_act[:,i]).max()
+            if abs(responses[:,i]).max()<1:
+                responses[:,i]=responses[:,i]/abs(responses[:,i]).max()    
+            corr[i]=pearsonr(np.array(responses)[:,i].flatten(),np.array(pred_act)[:,i].flatten())[0]
+            
+    return corr
+
+
+def printCorrelationAnalysis(act,val_act,pred_act,pred_val_act):
+    """
+    This function simply calculates the correlation between the predicted and 
+    and measured responses for the training and validation set and prints them out.
+    """
+    train_c=computeCorr(pred_act,act)
+    val_c=computeCorr(pred_val_act,val_act)
+    
+    print 'Correlation Coefficients (training/validation): ' + str(np.mean(train_c)) + '/' + str(np.mean(val_c))
+    return (train_c,val_c)
+    
 # functions for data visualization
 
 def hist_of_pred_and_record_response(runcodestr, pred_response, recorded_response, cell_id=0, PLOT=False):
@@ -52,7 +95,7 @@ def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False,ZOOM=Fa
       if(PLOT):
         plt.show()
 
-def  compare_corr_all_regions(pred_response,vld_set, corr_set, stats_param='max',titletxt='', RETURN=False):
+def compare_corr_all_regions(pred_response,vld_set, corr_set, stats_param='max',titletxt='', RETURN=False):
     corr1=corr_set['1']; corr2=corr_set['2']; corr3=corr_set['3']; 
     
     if stats_param.lower() == 'max' :
@@ -127,7 +170,7 @@ def cdf_allregions( CorrData, NUM_REGIONS=3, DType='', C_CODE=False, SHOW=True, 
     if(RETURN):
         return fig, Xs, Fs
 
-def  plot_corr_response_scatter(pred_response, vld_set, corr_set, stats_param='max',titletxt='', RETURN=False, datalabel1='Measured Response', datalabel2='Predicted Response'):
+def plot_corr_response_scatter(pred_response, vld_set, corr_set, stats_param='max',titletxt='', RETURN=False, datalabel1='Measured Response', datalabel2='Predicted Response'):
     
     if stats_param.lower() == 'max' :
         idx1=np.argmax(corr_set);
@@ -221,3 +264,84 @@ def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementat
   plt.xlabel(xlbl)
   plt.ylabel(ylbl)
   plt.show()
+  
+#plot previdted response TN vs TF and R^2 
+#plot previdted response vs measured for all types and R^2 
+
+def computeCorr_flat(response1,response2):
+    """
+    Compute correlation between two predicted activity flatten version
+    """
+    if len(response1.shape) >1:
+      response1 = response1.flatten()
+    if len(response2.shape) >1:
+      response2 = response2.flatten()
+    if np.all(response1[:]==0) & np.all(response2[:]==0):
+        corr=1.
+    elif not(np.all(response1[:]==0) | np.all(response2[:]==0)):
+        # /!\ To prevent errors due to very low values during computation of correlation
+        if abs(response1[:]).max()<1:
+            response1[:]=response1[:]/abs(response1[:]).max() 
+        if abs(response2[:]).max()<1:
+            response2[:]=response2[:]/abs(response2[:]).max()    
+        corr=pearsonr(response1,response2)[0]
+            
+    return corr   
+    
+    
+def get_param_from_fname(fname, keyword):
+    cuts = re.split('_',fname)
+    for prm in cuts:
+        if str.startswith(prm,keyword):
+            return prm[len(keyword):]
+    else:
+        print "WARNING:: KEYWORD NOT FOUND"
+        return None
+
+def load_TensorFlow_outputs(current_path, data_dir, dir_item,split_path = True):
+    if not str.endswith(dir_item,'/'):
+        dir_item = "%s/"%(dir_item)
+    if not split_path:
+        directory = dir_item
+    else:
+        directory = current_path+data_dir+dir_item
+    
+    TF_DAT={}
+    for root, dirs, files in os.walk(directory): 
+      # Look inside folder
+      matching = [fl for fl in files if fl.endswith('.npz') ]
+      if len(matching) == 0:
+        continue
+      fname=matching[0]
+      fullpath = directory+fname
+      npz_dat = np.load(fullpath)
+      for k in npz_dat.keys():
+        if k == 'CONFIG':
+            TF_DAT[k]=npz_dat[k].item()
+        else:
+            TF_DAT[k]=npz_dat[k]
+      npz_dat.close()
+      return TF_DAT
+    return None
+
+def build_hsm_for_Theano(REGION_NUM=3, seed=13, lgn=9, hlsr=0.2): # May not need
+    rg =1
+    from HSM import HSM
+    import param
+    import numpy as np
+    from get_host_path import get_host_path
+    ALL_HSM={}
+    PATH=get_host_path(HOST=False, PATH=True)
+    while rg <= REGION_NUM:
+        Region_num=str(rg)
+        training_inputs=np.load(PATH+'Data/region'+Region_num+'/training_inputs.npy')
+        training_set=np.load(PATH+'Data/region'+Region_num+'/training_set.npy')
+        num_pres,num_neurons = np.shape(training_set)
+        print "Creating HSM model"
+        hsm = HSM(training_inputs,training_set) # Initialize model --> add input and output, construct parameters , build mobel, # create loss function
+        print "Created HSM model"   
+        hsm.num_lgn = lgn 
+        hsm.hlsr = hlsr
+        ALL_HSM[Region_num]=hsm
+        rg+=1
+    return ALL_HSM
