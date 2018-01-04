@@ -12,22 +12,13 @@ import time
 from datetime import datetime
 from HSM import HSM
 from funcs_for_graphs import *
-"""    
+"""
 # Pseudo code for plotting 
 1. Plot y_pred of Theano and TF 
 2. Fit Linear Regression (?) or --- the model is Y = X  --> MSE and R^2 
 
 3. Calculate R^2 
 4. Plot FEV Theano and TF
-
-
------
- mean squared error (MSE) or the sum of squares of error (SSE), also called the “residual sum of squares.” (RSS)
-----
-The definition of R-squared is fairly straight-forward; it is the percentage of the response variable variation that is explained by a linear model. Or:
-
-R-squared = Explained variation / Total variation
-----
 
 then the variability of the data set can be measured using three sums of squares formulas:
 The total sum of squares (proportional to the variance of the data):

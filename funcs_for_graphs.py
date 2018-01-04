@@ -59,15 +59,17 @@ def hist_of_pred_and_record_response(runcodestr, pred_response, recorded_respons
    plt.show()
   return fig,ax
 
-def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False,ZOOM=False):
-    
+def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False,ZOOM=False,RETURN=False,TITLE=True):
+    if RETURN:
+        PLOT=False
     fig_max_z = None
     fig_min_z=None
     imax = np.argmax(corr) # note : actually have to combine neurons in all regions
     fig_max =plt.figure()
     plt.plot(train_set[:,imax],'-ok')
     plt.plot(yhat[:,imax],'--or')
-    plt.title('Code: %s\nCell#%d has max corr of %f'%(runcodestr,imax+1,np.max(corr)))
+    if TITLE:
+        plt.title('Code: %s\nCell#%d has max corr of %f'%(runcodestr,imax+1,np.max(corr)))
     if(PLOT):
       plt.show()
     if(ZOOM):
@@ -75,7 +77,8 @@ def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False,ZOOM=Fa
       plt.plot(train_set[:,imax],'-ok')
       plt.plot(yhat[:,imax],'--or')
       plt.xlim((600,650))
-      plt.title('Code: %s\nCell#%d has max corr of %f'%(runcodestr,imax+1,np.max(corr)))
+      if TITLE:
+        plt.title('Code: %s\nCell#%d has max corr of %f'%(runcodestr,imax+1,np.max(corr)))
       if(PLOT):
         plt.show()
       
@@ -83,7 +86,8 @@ def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False,ZOOM=Fa
     fig_min = plt.figure()
     plt.plot(train_set[:,imin],'-ok')
     plt.plot(yhat[:,imin],'--or')
-    plt.title('Code: %s\nCell#%d has min corr of %f'%(runcodestr,imin+1,np.min(corr)))
+    if TITLE:
+        plt.title('Code: %s\nCell#%d has min corr of %f'%(runcodestr,imin+1,np.min(corr)))
     if(PLOT):
       plt.show()
     if(ZOOM):
@@ -91,9 +95,15 @@ def plot_act_of_max_min_corr(runcodestr, yhat,train_set,corr, PLOT=False,ZOOM=Fa
       plt.plot(train_set[:,imin],'-ok')
       plt.plot(yhat[:,imin],'--or')
       plt.xlim((600,650))
-      plt.title('Code: %s\nCell#%d has min corr of %f'%(runcodestr,imin+1,np.min(corr)))
+      if TITLE:
+        plt.title('Code: %s\nCell#%d has min corr of %f'%(runcodestr,imin+1,np.min(corr)))
       if(PLOT):
         plt.show()
+    if RETURN:
+        if ZOOM:
+            return fig_max, fig_max_z, fig_min, fig_min_z
+        else:
+            return fig_max, fig_min
 
 def compare_corr_all_regions(pred_response,vld_set, corr_set, stats_param='max',titletxt='', RETURN=False):
     corr1=corr_set['1']; corr2=corr_set['2']; corr3=corr_set['3']; 
@@ -145,7 +155,7 @@ def compare_corr_all_regions(pred_response,vld_set, corr_set, stats_param='max',
     if RETURN :
         return fig
         
-def cdf_allregions( CorrData, NUM_REGIONS=3, DType='', C_CODE=False, SHOW=True, RETURN=False):
+def cdf_allregions( CorrData, NUM_REGIONS=3, DType='',fileloc='',filename='CDF' , C_CODE=False, SHOW=True, RETURN=False, SAVE=False):
     fig=plt.figure()
     Fs={}; Xs={}
     if(C_CODE):
@@ -165,6 +175,9 @@ def cdf_allregions( CorrData, NUM_REGIONS=3, DType='', C_CODE=False, SHOW=True, 
     plt.title(DType+' CDF')
     plt.ylabel('% of neurons')
     plt.xlabel('Correlation coefficient')
+    if SAVE:
+        plt.savefig(os.path.join(fileloc,filename+'.svg'))
+        plt.savefig(os.path.join(fileloc,filename+'.png'))
     if(SHOW):
         plt.show()
     if(RETURN):
@@ -185,8 +198,8 @@ def plot_corr_response_scatter(pred_response, vld_set, corr_set, stats_param='ma
     else:
         print "Parameter not Found "
 
-    fig, ax = plt.subplots()
-    plt.subplot(2,1,1)
+    fig, ax = plt.subplots(figsize=[16,4])
+    plt.subplot(1,2,1)
     plt.plot(vld_set[:,idx1],'-ok',label=datalabel1)
     plt.plot(pred_response[:, idx1],'--or',label=datalabel2)
     plt.ylabel('Response')
@@ -194,15 +207,14 @@ def plot_corr_response_scatter(pred_response, vld_set, corr_set, stats_param='ma
     plt.title("Cell#%g is the %s  neuron, R = %.5f, mean neuron has R = %.5f"%(idx1+1 ,stats_param,stat1, np.mean(corr_set)))
     plt.legend(loc=0)
     
-    plt.subplot(2,1,2)
+    plt.subplot(1,2,2)
     plt.scatter(vld_set[:,idx1], pred_response[:,idx1])
     N=np.ceil(np.max([np.max(pred_response[:,idx1]),np.max(vld_set[:,idx1])]))
     plt.plot(np.arange(N),np.arange(N),'--c')
     plt.xlim([0,N]); plt.ylim([0,N])
     plt.ylabel(datalabel2)
     plt.xlabel(datalabel1)
-    plt.title('Scatter plot of measured response and predicted response of cell#%g'%(idx1+1))
-    
+    plt.title('Scatter plot of measured response and predicted response of cell#%g'%(idx1+1))  
 
     if titletxt is not '':
         plt.suptitle(titletxt)
@@ -211,7 +223,65 @@ def plot_corr_response_scatter(pred_response, vld_set, corr_set, stats_param='ma
     if RETURN :
         return fig
 
+def plot_fig4_response_scatter( model_activity, 
+                                cell_true_activity, 
+                                corr_set, 
+                                stats_param='max',
+                                fileloc='',
+                                filename='fig4',
+                                runcodestr='',
+                                datalabel1='Recorded neural response', 
+                                datalabel2='Predicted response from model',
+                                RETURN=False, 
+                                SAVE=False
+                                ):
+    
+    if stats_param.lower() == 'max' :
+        idx1=np.argmax(corr_set);
+        stat1 = np.max(corr_set);
+        nr_text ='best'
+    elif stats_param.lower() == 'min' :
+        idx1=np.argmin(corr_set);
+        stat1 = np.min(corr_set);
+        nr_text ='worst'
+    elif stats_param.lower() == 'median' or stats_param.lower() == 'med':
+        N1=len(corr_set);
+        idx1 = N1/2-1 if N1%2==0 else (N1-1)/2
+        stat1=np.sort(corr_set)[idx1]
+        nr_text ='median'
+    else:
+        print "Parameter not Found "
+    
+    #Compare response
+    fig, ax = plt.subplots(figsize=[16,5])
+    plt.subplot(1,2,1)
+    plt.plot(cell_true_activity[:,idx],'-ok',label=datalabel1)
+    plt.plot(model_activity[:,idx], '--ok', markerfacecolor='white',label=datalabel2)
+    ylim_up = np.ceil(np.max([np.max(cell_true_activity[:,idx]),np.max(model_activity[:,idx])]))
+    ylim_low = np.floor(np.min([np.min(cell_true_activity[:,idx]),np.min(model_activity[:,idx])]))
+    plt.ylim([ylim_low,ylim_up])
+    plt.xlabel('Image #')
+    plt.ylabel('Response')
+    plt.legend(loc=0)
 
+    #scatter plot
+    plt.subplot(1,2,2)
+    plt.scatter(cell_true_activity[:,idx1], model_activity[:,idx1], facecolors='none', edgecolors='k')
+    N=np.ceil(np.max([np.max(model_activity[:,idx1]),np.max(cell_true_activity[:,idx1])]))
+    plt.plot(np.arange(N),np.arange(N),'--',color=(0.6,0.6,0.6),label='reference line(y = x)')
+    plt.xlim([0,N]); plt.ylim([0,N])
+    plt.ylabel(datalabel2)
+    plt.xlabel(datalabel1)
+    plt.legend(loc=0)
+    plt.suptitle('%s\nResponse per image of the %s neuron, R=%f'%(runcodestr,nr_text,stat1))
+    if SAVE:
+        plt.savefig(os.path.join(fileloc,filename+'.svg'))
+        plt.savefig(os.path.join(fileloc,filename+'.png'))
+    plt.show()
+    
+    if RETURN :
+        return fig
+        
 def plot_seeds_withR2(S1,S2,set_name='validation',region='3',seeds =('13','0'), implementation = 'Antolik''s implementation'):
 
   line_len = max(np.ceil(S1.max()),np.ceil(S2.max()))

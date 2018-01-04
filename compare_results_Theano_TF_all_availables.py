@@ -237,7 +237,6 @@ TF_TR_fig_med=compare_corr_all_regions(TF_TR_pred_response,train_set, TF_corr, s
 TF_VLD_fig_max=compare_corr_all_regions(TF_VLD_pred_response,vld_set, TF_vld_corr, stats_param='max', titletxt='TF :: 1st Validation Set', RETURN=True)
 TF_VLD_fig_med=compare_corr_all_regions(TF_VLD_pred_response,vld_set, TF_vld_corr, stats_param='median', titletxt='TF:: 1st Validation Set', RETURN=True)
 
-"""
 #TN & TF corr 
 TNTF_corr={}; TNTF_vld_corr={}
 for i in range(NUM_REGIONS):
@@ -258,7 +257,8 @@ combine_TNTF_vld_corr = np.concatenate((TNTF_vld_corr['1'], TNTF_vld_corr['2'],T
 
 plt.subplot(121); plt.hist(combine_TNTF_corr,normed=True); plt.xlim([0,1]); plt.title('Training set')
 plt.subplot(122); plt.hist(combine_TNTF_vld_corr,normed=True); plt.xlim([0,1]); plt.title('Validation set')
-plt.suptitle('Distribution of correlation coefficient between response from Theano and TensorFlow')
+plt.suptitle('Distribution of correlation coefficient between responses predicted from the original HSM model and the reimplemented version')
+
 """
 
 # #############Combine all regions :: cdf ############## 

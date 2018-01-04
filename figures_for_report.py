@@ -36,9 +36,7 @@ except OSError:
     if not os.path.isdir(figures_dir):
         raise
 SAVEFIG=False
-dt_stamp = re.split(
-        '\.', str(datetime.now()))[0].\
-        replace(' ', '_').replace(':', '_').replace('-', '_')
+
 # #############  Download Data Set ############## 
 download_time = time.time() #print "Download complete: Time %s" %(time.time() - download_time)
 runpath=os.getcwd()
@@ -83,7 +81,7 @@ data_dir_all_regions =  os.path.join(os.getcwd(),'TFtrainingSummary','SciPy_SEED
 TN_filename = lambda seed,region:"HSMout_theano_SciPytestSeed_Rg%s_MaxIter100000_seed%g.npy"%(region,seed)
 TF_filename = lambda seed,trial,region:"AntolikRegion%s_SciPy_jac_npSeed_MaxIter100000_itr1_SEED%g_trial%g_"%(region,seed,trial)
 TN_list_trial = lambda seed,region:"HSMout_theano_SciPytestSeed_Rg%s_MaxIter100000_seed%g*"%(region,seed)
-TF_list_trial = lambda seed,region:"AntolikRegion%s_SciPy_jac_npSeed_MaxIter100000_itr1_SEED%g_trial*"%(region,seed)
+TF_list_trial = lambda seed,region:"AntolikRegion%s_SciPy_jac_npSeed_MaxIter100000_itr1_SEED%g*"%(region,seed)
  
 TN_TR_pred_response={}; TN_VLD_pred_response={};
 TF_TR_pred_response={}; TF_VLD_pred_response={}
@@ -93,6 +91,7 @@ this_tr =all_trials[0]
 
 for rg in all_regions:
     import ipdb; ipdb.set_trace()
+    tmpdat =None; tmpitem=None;
     this_rg = str(rg)
     key = str(rg)
     print '[',key,']'
@@ -111,7 +110,7 @@ for rg in all_regions:
     TN_VLD_pred_response[key] = HSM.response(hsm[key],vldinput_set[key],Ks_outputs[key]) #predicted response for validation set
    
     #Tensorflow
-    TF_all_folders = glob.glob(os.path.join(data_dir, TF_filename(this_ss,this_tr,this_rg) +'*'))
+    TF_all_folders = glob.glob(os.path.join(data_dir, TF_list_trial(this_ss,this_rg) +'*'))
     print TF_all_folders
     for this_item in TF_all_folders: 
         tmpdat=load_TensorFlow_outputs('', data_dir, this_item,split_path=False)
@@ -124,18 +123,20 @@ for rg in all_regions:
     #TensorFlow
     TF_TR_pred_response[key] = TF_outputs[key]['TR_1st_pred_response'] # predicted response after train
     TF_VLD_pred_response[key] = TF_outputs[key]['VLD_1st_ypredict'] #predicted response for validation set
-# #############  Mean activity to validation set ############## 
-import ipdb; ipdb.set_trace()
 
-TN_corr={}; TN_vld_corr={}
-TF_corr={}; TF_vld_corr={}
+    
+# #############  Mean activity to validation set ############## 
+TN_corr={}; 
+TN_vld_corr={}
+TF_corr={}; 
+TF_vld_corr={}
 
 for i in range(NUM_REGIONS):
-    id=str(i+1)
-    TN_corr[id] = computeCorr(TN_TR_pred_response[id],train_set[id])
-    TN_vld_corr[id]=computeCorr(TN_VLD_pred_response[id],vld_set[id])
-    TF_corr[id] = computeCorr(TF_TR_pred_response[id],train_set[id])
-    TF_vld_corr[id]=computeCorr(TF_VLD_pred_response[id],vld_set[id])
+    key=str(i+1)
+    TN_corr[key] = computeCorr(TN_TR_pred_response[key],train_set[key])
+    TN_vld_corr[key]=computeCorr(TN_VLD_pred_response[key],vld_set[key])
+    TF_corr[key] = computeCorr(TF_TR_pred_response[key],train_set[key])
+    TF_vld_corr[key]=computeCorr(TF_VLD_pred_response[key],vld_set[key])
 
 #combine response from all region
 for rg in all_regions:
@@ -146,7 +147,7 @@ for rg in all_regions:
     if check_file is None:
         print "Error: File not found\t Theano seed = %g"%(ss)
         print this_item
-    TF_all_folders = glob.glob(os.path.join(data_dir, TF_filename(this_ss,this_rg) +'*'))
+    TF_all_folders = glob.glob(os.path.join(data_dir, TF_filename(this_ss,this_tr,this_rg) +'*'))
     for this_item in TF_all_folders: 
         print "\t\t this item: ",this_item
         tmpdat=load_TensorFlow_outputs('', data_dir, this_item,split_path=False)
