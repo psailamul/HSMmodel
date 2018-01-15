@@ -14,6 +14,7 @@ from HSM import HSM
 from funcs_for_graphs import *
 import glob
 import param
+from scipy.stats import ttest_rel
 
 # # ############# Functions ###############
 def get_param_from_fname(fname, keyword):
@@ -267,8 +268,15 @@ for ss in seed_list:
 
 R2_training=[]
 R2_VLD =[]
+onebig_TN_TR=np.zeros([1800,103,50])
+onebig_TF_TR=np.zeros([1800,103,50])
+onebig_TN_VLD=np.zeros([50,103,50])
+onebig_TF_VLD=np.zeros([50,103,50])
+
+
 for ss in seed_list:
     id = str(ss)
+    print id
     #Training set
     setname ='TRAINING'
     response1 =Theano_TR_pred_response[id]
@@ -281,8 +289,47 @@ for ss in seed_list:
     response2 =TF_VLD_pred_response[id]
     r_sqr = TN_TF_Rsquare(response1, response2)
     R2_VLD.append(r_sqr)
+    onebig_TN_TR[:,:,ss-1]= Theano_TR_pred_response[id]
+    onebig_TF_TR[:,:,ss-1]=TF_TR_pred_response[id]
+    onebig_TN_VLD[:,:,ss-1]=Theano_VLD_pred_response[id]
+    onebig_TF_VLD[:,:,ss-1]=TF_VLD_pred_response[id]
+
+allseeds_TN_TR=np.zeros([50,1800*103])
+allseeds_TF_TR=np.zeros([50,1800*103])
+allseeds_TN_VLD=np.zeros([50,50*103])
+allseeds_TF_VLD=np.zeros([50,50*103])
+
+for ss in seed_list:
+    id = str(ss)
+    allseeds_TN_TR[ss-1,:]= Theano_TR_pred_response[id].flatten()
+    allseeds_TF_TR[ss-1,:]=TF_TR_pred_response[id].flatten()
+    allseeds_TN_VLD[ss-1,:]=Theano_VLD_pred_response[id].flatten()
+    allseeds_TF_VLD[ss-1,:]=TF_VLD_pred_response[id].flatten()
     
     
+#scipy.stats.ttest_rel(a, b, axis=0, nan_policy='propagat
+#Want to test that the variation for one neuron different from other neuron
+#ttest_rel(response1,response2) --- 103 = stats per neuron 
+#might have to show the confident interval 
+#Like It's might be significantly different but the difference is within 95% CI   
+#paired TTest
+#TRttest = ttest_rel(onebig_TN_TR.T, onebig_TF_TR.T) #check result from 50 seeds (per neuron, per image)
+TRttest = ttest_rel(allseeds_TN_TR, allseeds_TF_TR) #check result from 50 seeds (per neuron, per image)
+import numpy as np, statsmodels.stats.api as sms
+cm = sms.CompareMeans(sms.DescrStatsW(allseeds_TN_VLD[:,0]), sms.DescrStatsW(allseeds_TF_VLD[:,0]))
+print cm.tconfint_diff(usevar='unequal') 
+
+
+#one samole t-test --- mean diff from 0
+diffall = allseeds_TN_VLD.flatten() - allseeds_TF_VLD.flatten()
+from scipy import stats
+stats.ttest_1samp(diffall,popmean=0.0)
+#Ttest_1sampResult(statistic=2.0282379872276359, pvalue=0.042536991866441727)
+
+dd=sms.DescrStatsW(diffall)
+sms.DescrStatsW.ttest_mean(dd,value=0, alternative='two-sided')
+#http://www.statsmodels.org/stable/generated/statsmodels.stats.weightstats.CompareMeans.html
+
 if(False):
     R2_all_regions = {}
     #for ss in seed_list:
