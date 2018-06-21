@@ -17,7 +17,7 @@ from numpy.random import seed, rand
     
 # CUDA_VISIBLE_DEVICES=2 python tf_HSM_main_MaxFunc_100k_upgraded.py REGION=2 RESTART_TRIAL=0 SEED=13 ITERATIONS=1 LR=1e-3 NUM_LGN=9 HLSR=0.2
 # CUDA_VISIBLE_DEVICES=2 
-#python tf_HSM_main_Scipy_jac_np_multrials.py REGION=3 RESTART_TRIAL=5 SEED=13 ITERATIONS=1 LR=1e-3 NUM_LGN=9 HLSR=0.2 | tee Seed_LOG_reviewCode/HSM_Tensorflow_region3_seed13_trial5.txt
+#python tf_HSM_main_Scipy_jac_np_multrials_TF1-8.py REGION=3 RESTART_TRIAL=5 SEED=13 ITERATIONS=1 LR=1e-3 NUM_LGN=9 HLSR=0.2 | tee Seed_LOG_reviewCode/HSM_Tensorflow_region3_seed13_trial5.txt
 def correlate_vectors(yhat_array, y_array):
   corrs = []      
   for yhat, y in zip(np.transpose(yhat_array), np.transpose(y_array)):
@@ -134,7 +134,8 @@ def main():
           targets=neural_response)
           
         # Optimize loss
-        train_op=ScipyOptimizerInterface(loss, var_list=tf.trainable_variables(), method='TNC', bounds=hsm.bounds_list, jac=tf.gradients(loss, tf.trainable_variables()) ,options={'maxiter': MAXITER, 'disp':True}) #, 'maxCGit':5}) 
+        #jac=tf.gradients(loss, tf.trainable_variables())
+        train_op=ScipyOptimizerInterface(loss, var_list=tf.trainable_variables(), method='TNC', var_to_bounds=hsm.bounds_list, options={'maxiter': MAXITER, 'disp':True}) #, 'maxCGit':5}) 
 
         # Track correlation between YY_hat and YY    
         score = tf.nn.l2_loss(pred_neural_response - neural_response)
@@ -167,8 +168,8 @@ def main():
     
     for idx in range(iterations):
       itr_time=time.time()
-
-      train_op=ScipyOptimizerInterface(loss, var_list=tf.trainable_variables(), method='TNC', bounds=hsm.bounds_list, jac=tf.gradients(loss, tf.trainable_variables()) ,options={'maxiter': MAXITER, 'disp':True})
+      #, jac=tf.gradients(loss, tf.trainable_variables()) 
+      train_op=ScipyOptimizerInterface(loss, var_list=tf.trainable_variables(), method='TNC', var_to_bounds=hsm.bounds_list, options={'maxiter': MAXITER, 'disp':True})
       train_op.minimize(sess, fetches=[loss, score, pred_neural_response, l1, lgn_out],
           feed_dict={images: train_input, neural_response: train_set})
 

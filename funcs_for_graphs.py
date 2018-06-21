@@ -13,8 +13,24 @@ import param
 
 SEED = 13
 
-
-
+# functions for data visualization and other helper functions
+def TN_TF_Rsquare(TN, TF):
+  """
+  With the expectation that TN and TF would generate the same prediction. 
+  Thus y = x where x is the neural response from HSM model 
+  and y is the neural response from the Tensorflow implementation
+  Return the calculate the R^2
+  """
+  y = TF
+  x = TN
+  f = x
+  err =  y-f
+  ymean = np.mean(y)
+  SStot = np.sum(np.power(y-ymean,2)) #total sum of squares
+  SSreg = np.sum(np.power(f-ymean,2))
+  SSres = np.sum(np.power(err,2)) #Residual sum of square
+  return 1-np.true_divide(SSres, SStot)
+  
 def computeCorr(pred_act,responses):
     """
     Compute correlation between predicted and recorded activity for each cell
@@ -36,7 +52,6 @@ def computeCorr(pred_act,responses):
             
     return corr
 
-
 def printCorrelationAnalysis(act,val_act,pred_act,pred_val_act):
     """
     This function simply calculates the correlation between the predicted and 
@@ -47,9 +62,7 @@ def printCorrelationAnalysis(act,val_act,pred_act,pred_val_act):
     
     print 'Correlation Coefficients (training/validation): ' + str(np.mean(train_c)) + '/' + str(np.mean(val_c))
     return (train_c,val_c)
-    
-# functions for data visualization
-
+   
 def hist_of_pred_and_record_response(runcodestr, pred_response, recorded_response, cell_id=0, PLOT=False):
   fig,ax = plt.subplots(figsize=(12,8))
   plt.subplot(121); plt.hist(recorded_response[:,cell_id]); plt.title('Recorded Response');
@@ -321,11 +334,12 @@ def plot_TN_TF_withR2(TN,TF,set_name='validation',SEED=SEED):
   plt.ylabel("Re-implementation with Tensorflow")
   plt.show()
 
-def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementation with Theano',ylbl="Re-implementation with Tensorflow"):
+def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementation with Theano',ylbl="Re-implementation with Tensorflow",RETURN = False):
   line=np.ceil(max(TN.max(),TF.max()))
+  fig_handle =plt.figure()
   plt.scatter(TN,TF,c='b',marker='.')
   plt.plot(np.arange(line+1),np.arange(line+1),'-k')
-  plt.text(line_len-1, line_len-1, 'y = x',
+  plt.text(line-1, line-1, 'y = x',
          rotation=45,
          horizontalalignment='center',
          verticalalignment='top',
@@ -333,7 +347,10 @@ def plot_TN_TF_scatter_linear(TN, TF, titletxt = '',xlbl='Antolik''s implementat
   plt.title(titletxt)
   plt.xlabel(xlbl)
   plt.ylabel(ylbl)
-  plt.show()
+  if RETURN:
+    return fig_handle
+  else:
+    plt.show()
   
 #plot previdted response TN vs TF and R^2 
 #plot previdted response vs measured for all types and R^2 
@@ -366,7 +383,11 @@ def get_param_from_fname(fname, keyword):
             return prm[len(keyword):]
     else:
         print "WARNING:: KEYWORD NOT FOUND"
+        print "Keyword = %s"%(keyword)
         return None
+    if not str.endswith(dir_item,'/'):
+        dir_item = "%s/"%(dir_item)
+    directory = current_path+data_dir+dir_item
 
 def load_TensorFlow_outputs(current_path, data_dir, dir_item,split_path = True):
     if not str.endswith(dir_item,'/'):

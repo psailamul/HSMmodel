@@ -201,7 +201,7 @@ rg1_train_input = train_input['1']
 rg1_train_set = train_set['1']
 rg1_vldinput_set = vldinput_set['1']
 rg1_vld_set = vld_set['1']
-
+num_pres,num_neurons = np.shape(rg1_train_set)
 
 hsm = HSM(rg1_train_input,rg1_train_set) 
 hsm.num_lgn = lgn 
@@ -220,12 +220,19 @@ for tr in trial_list:
     tmpdat=load_TensorFlow_outputs('', data_dir, this_item,split_path=False)
     TF_across_trial[str(tr)]  = tmpdat
     
-    
+ 
+from scipy import stats
+  
 #Get responses
 Theano_TR_pred_response= {}
 Theano_VLD_pred_response={}
 TF_TR_pred_response={}
 TF_VLD_pred_response={}
+#Get corr
+TN_TR_corr=np.zeros([len(trial_list),num_neurons])
+TN_VLD_corr=np.zeros([len(trial_list),num_neurons])
+TF_TR_corr=np.zeros([len(trial_list),num_neurons])
+TF_VLD_corr=np.zeros([len(trial_list),num_neurons])
 
 hsm_tr = HSM(rg1_train_input,rg1_train_set)  
 hsm_tr.num_lgn = lgn 
@@ -241,45 +248,45 @@ for tr in trial_list:
     #TensorFlow
     TF_TR_pred_response[str(tr)] = TF_across_trial[str(tr)]['TR_1st_pred_response'] # predicted response after train
     TF_VLD_pred_response[str(tr)] = TF_across_trial[str(tr)]['VLD_1st_ypredict'] #predicted response for validation set
+    #Corr
+    TN_TR_corr[tr, :] = computeCorr(Theano_TR_pred_response[str(tr)],rg1_train_set)
+    TF_TR_corr[tr, :] = computeCorr(TF_TR_pred_response[str(tr)],rg1_train_set)
+    #VLD
+    TN_VLD_corr[tr, :] = computeCorr(Theano_VLD_pred_response[str(tr)],rg1_vld_set)
+    TF_VLD_corr[tr, :] = computeCorr(TF_VLD_pred_response[str(tr)],rg1_vld_set)
+
+R2 = False
+if (R2):
+    R2_all_regions = {}
+    for tr in trial_list:
+      id = str(tr)
+      setname ='TRAINING'
+      response1 =Theano_TR_pred_response[id]
+      response2 =TF_TR_pred_response[id]
+      r_sqr = TN_TF_Rsquare(response1, response2)
+      titletxt = "Seed=%g, Trial#%s: Predicted responses from %s set\nR^2 = %f"%(curr_seed, id,setname,r_sqr)
+      xlbl='Antolik''s implementation with Theano'
+      ylbl="Re-implementation with Tensorflow"
+      
+      fig = plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl, RETURN=True)
+      R2_all_regions[id] = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(response1.T,response2.T)]
+      # plt.figure()
+      # plt.hist(R2_all_regions[id],50)
+      # plt.title(titletxt)
+      
+      setname ='VALIDATION'
+      response1 =Theano_VLD_pred_response[id]
+      response2 =TF_VLD_pred_response[id]
+      r_sqr = TN_TF_Rsquare(response1, response2)
+      titletxt = "Seed=%g, Trial#%s: Predicted responses from %s set\nR^2 = %f"%(curr_seed, id,setname,r_sqr)
+      xlbl='Antolik''s implementation with Theano'
+      ylbl="Re-implementation with Tensorflow"
+      fig =plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl,RETURN=True)
+      R2_all_regions[id] = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(response1.T,response2.T)]
+      # plt.figure()
+      # plt.hist(R2_all_regions[id],50)
+      # plt.title(titletxt)
+      plt.show()
 
 
-R2_all_regions = {}
-for tr in trial_list:
-  id = str(tr)
-  setname ='TRAINING'
-  response1 =Theano_TR_pred_response[id]
-  response2 =TF_TR_pred_response[id]
-  r_sqr = TN_TF_Rsquare(response1, response2)
-  titletxt = "Seed=%g, Trial#%s: Predicted responses from %s set\nR^2 = %f"%(curr_seed, id,setname,r_sqr)
-  xlbl='Antolik''s implementation with Theano'
-  ylbl="Re-implementation with Tensorflow"
-  
-  fig = plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl, RETURN=True)
-  R2_all_regions[id] = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(response1.T,response2.T)]
-  # plt.figure()
-  # plt.hist(R2_all_regions[id],50)
-  # plt.title(titletxt)
-  
-  setname ='VALIDATION'
-  response1 =Theano_VLD_pred_response[id]
-  response2 =TF_VLD_pred_response[id]
-  r_sqr = TN_TF_Rsquare(response1, response2)
-  titletxt = "Seed=%g, Trial#%s: Predicted responses from %s set\nR^2 = %f"%(curr_seed, id,setname,r_sqr)
-  xlbl='Antolik''s implementation with Theano'
-  ylbl="Re-implementation with Tensorflow"
-  fig =plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl,RETURN=True)
-  R2_all_regions[id] = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(response1.T,response2.T)]
-  # plt.figure()
-  # plt.hist(R2_all_regions[id],50)
-  # plt.title(titletxt)
-  plt.show()
- 
- from scipy import stats
-[statistic, pvalue] = stats.ttest_rel(response1, response2)
 
-########################################################################
-# Check same seed with different trials 
-########################################################################
-
-SEED_LIST = np.arange(50) +1
-TRIAL_LIST = 0

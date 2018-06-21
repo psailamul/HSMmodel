@@ -12,8 +12,9 @@ import sys
 from visualization import *
 from funcs_for_graphs import *
 
-#python HSM_theano_SciPy_minimize_multirun.py REGION=1 RESTART_TRIAL=0 SEED=13 | tee Seed_LOG/HSM_Theano_region1_seed13_trial0.txt
+#python HSM_theano_SciPy_minimize_multirun.py REGION=1 RESTART_TRIAL=5 SEED=13 | tee Seed_LOG_reviewCode/HSM_Theano_region1_seed13_trial5.txt
 
+#python HSM_theano_SciPy_minimize_multirun.py REGION=3 RESTART_TRIAL=0 SEED=0
 def main():
     #########################################################################
     # Simulation Config
@@ -58,7 +59,7 @@ def main():
     Code='SciPytestSeed'
     HOST, PATH = get_host_path(HOST=True, PATH=True)
     #SUMMARY_DIR = 'TFtrainingSummary/SciPy_maxiter_grad/'
-    SUMMARY_DIR = 'TFtrainingSummary/SciPy_SEEDnumpy/'
+    SUMMARY_DIR = 'TFtrainingSummary/SciPy_SEEDnumpy_reviewCode/'
     #c(Ks,success,c)=fmin_tnc(func ,Ks,fprime=hsm.der(),bounds=hsm.bounsd,maxfun = 100000,messages=0)  # https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.optimize.fmin_tnc.html
     out=minimize(func ,Ks,method='TNC',jac=hsm.der(),bounds=hsm.bounds,options={'maxiter':MAXITER,'disp':True})
 

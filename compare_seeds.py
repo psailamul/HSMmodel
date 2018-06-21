@@ -8,14 +8,13 @@ from visualization import *
 from get_host_path import get_host_path
 import os
 import re
-import time
 from datetime import datetime
 from HSM import HSM
 from funcs_for_graphs import *
 import glob
 import param
 from scipy.stats import ttest_rel
-
+from scipy import stats
 # # ############# Functions ###############
 def get_param_from_fname(fname, keyword):
     cuts = re.split('_',fname)
@@ -206,6 +205,7 @@ hsm = HSM(rg1_train_input,rg1_train_set)
 hsm.num_lgn = lgn 
 hsm.hlsr = hlsr      
 for ss in seed_list:
+    print "ss:",ss
     #Theano
     fname = TN_filename(ss,curr_trial) 
     this_item = fname[:-4] #remove.npy
@@ -266,13 +266,45 @@ for ss in seed_list:
     TF_TR_pred_response[str(ss)] = TF_across_seeds[str(ss)]['TR_1st_pred_response'] # predicted response after train
     TF_VLD_pred_response[str(ss)] = TF_across_seeds[str(ss)]['VLD_1st_ypredict'] #predicted response for validation set
 
+# #############  Mean activity to validation set ############## 
+TN_corr=np.zeros([50,103]); 
+TN_vld_corr=np.zeros([50,103])
+TF_corr=np.zeros([50,103]); 
+TF_vld_corr=np.zeros([50,103])
+ttest_result_TR=[]
+pval_TR=np.zeros(50)
+ttest_result_VLD=[]
+pval_VLD=np.zeros(50)
+pval_direct_TR=np.zeros(50)
+pval_direct_VLD=np.zeros(50)
+for ss in seed_list:
+    id=str(ss)
+    print "id: ", id
+    TN_corr[ss-1,:] = computeCorr(Theano_TR_pred_response[id],rg1_train_set) #corr per neuron
+    TN_vld_corr[ss-1,:]=computeCorr(Theano_VLD_pred_response[id],rg1_vld_set)
+    TF_corr[ss-1,:] = computeCorr(TF_TR_pred_response[id],rg1_train_set)
+    TF_vld_corr[ss-1,:]=computeCorr(TF_VLD_pred_response[id],rg1_vld_set)   
+    ttestTR= ttest_in(TN_corr[id],TF_corr[id])
+    ttest_result_TR.append(ttestTR)
+    pval_TR[ss-1] = ttestTR.pvalue
+    ttestVLD= ttest_ind(TN_vld_corr[id],TF_vld_corr[id])
+    ttest_result_VLD.append(ttestVLD)
+    pval_VLD[ss-1]= ttestVLD.pvalue
+    tmpTR= ttest_rel(Theano_TR_pred_response[id].flatten(),TF_TR_pred_response[id].flatten())
+    pval_direct_TR[ss-1]=tmpTR.pvalue
+    tmpVLD= ttest_rel(Theano_VLD_pred_response[id].flatten(),TF_VLD_pred_response[id].flatten())
+    pval_direct_VLD[ss-1]=tmpVLD.pvalue
+resTR=ttest_rel(TN_corr,TF_corr)
+resVLD=ttest_rel(TN_vld_corr,TF_vld_corr)
+#Remove Cell ID 67
+best_seed=np.argmax(np.mean(TN_corr,axis=1))
+#============================================================================
 R2_training=[]
 R2_VLD =[]
-onebig_TN_TR=np.zeros([1800,103,50])
+onebig_TN_TR=np.zeros([1800,103,50]) #3D: Image x neuron x seed
 onebig_TF_TR=np.zeros([1800,103,50])
 onebig_TN_VLD=np.zeros([50,103,50])
 onebig_TF_VLD=np.zeros([50,103,50])
-
 
 for ss in seed_list:
     id = str(ss)
@@ -294,19 +326,76 @@ for ss in seed_list:
     onebig_TN_VLD[:,:,ss-1]=Theano_VLD_pred_response[id]
     onebig_TF_VLD[:,:,ss-1]=TF_VLD_pred_response[id]
 
-allseeds_TN_TR=np.zeros([50,1800*103])
+allseeds_TN_TR=np.zeros([50,1800*103]) #2D: seed x activity of a neuron per image(=imagexneuron)
 allseeds_TF_TR=np.zeros([50,1800*103])
 allseeds_TN_VLD=np.zeros([50,50*103])
 allseeds_TF_VLD=np.zeros([50,50*103])
-
+ttest_result_TR=[]
+pval_TR=np.zeros(50)
+ttest_result_VLD=[]
+pval_VLD=np.zeros(50)
 for ss in seed_list:
     id = str(ss)
     allseeds_TN_TR[ss-1,:]= Theano_TR_pred_response[id].flatten()
     allseeds_TF_TR[ss-1,:]=TF_TR_pred_response[id].flatten()
     allseeds_TN_VLD[ss-1,:]=Theano_VLD_pred_response[id].flatten()
     allseeds_TF_VLD[ss-1,:]=TF_VLD_pred_response[id].flatten()
-    
-    
+    ttestTR= ttest_rel(Theano_TR_pred_response[id].flatten(),TF_TR_pred_response[id].flatten())
+    ttest_result_TR.append(ttestTR)
+    pval_TR[ss-1] = ttestTR.pvalue
+    ttestVLD= ttest_rel(Theano_VLD_pred_response[id].flatten(),TF_VLD_pred_response[id].flatten())
+    ttest_result_VLD.append(ttestVLD)
+    pval_VLD[ss-1]= ttestVLD.pvalue
+        
+"""
+R2_training=[]
+R2_VLD =[]
+onebig_TN_TR=np.zeros([1800,103,50]) #3D: Image x neuron x seed
+onebig_TF_TR=np.zeros([1800,103,50])
+onebig_TN_VLD=np.zeros([50,103,50])
+onebig_TF_VLD=np.zeros([50,103,50])
+
+for ss in seed_list:
+    id = str(ss)
+    print id
+    #Training set
+    setname ='TRAINING'
+    response1 =Theano_TR_pred_response[id]
+    response2 =TF_TR_pred_response[id]
+    r_sqr = TN_TF_Rsquare(response1, response2)
+    R2_training.append(r_sqr)
+    #Test set
+    setname ='TEST'
+    response1 =Theano_VLD_pred_response[id]
+    response2 =TF_VLD_pred_response[id]
+    r_sqr = TN_TF_Rsquare(response1, response2)
+    R2_VLD.append(r_sqr)
+    onebig_TN_TR[:,:,ss-1]= Theano_TR_pred_response[id]
+    onebig_TF_TR[:,:,ss-1]=TF_TR_pred_response[id]
+    onebig_TN_VLD[:,:,ss-1]=Theano_VLD_pred_response[id]
+    onebig_TF_VLD[:,:,ss-1]=TF_VLD_pred_response[id]
+
+allseeds_TN_TR=np.zeros([50,1800*103]) #2D: seed x activity of a neuron per image(=imagexneuron)
+allseeds_TF_TR=np.zeros([50,1800*103])
+allseeds_TN_VLD=np.zeros([50,50*103])
+allseeds_TF_VLD=np.zeros([50,50*103])
+ttest_result_TR=[]
+pval_TR=np.zeros(50)
+ttest_result_VLD=[]
+pval_VLD=np.zeros(50)
+for ss in seed_list:
+    id = str(ss)
+    allseeds_TN_TR[ss-1,:]= Theano_TR_pred_response[id].flatten()
+    allseeds_TF_TR[ss-1,:]=TF_TR_pred_response[id].flatten()
+    allseeds_TN_VLD[ss-1,:]=Theano_VLD_pred_response[id].flatten()
+    allseeds_TF_VLD[ss-1,:]=TF_VLD_pred_response[id].flatten()
+    ttestTR= ttest_rel(Theano_TR_pred_response[id].flatten(),TF_TR_pred_response[id].flatten())
+    ttest_result_TR.append(ttestTR)
+    pval_TR[ss-1] = ttestTR.pvalue
+    ttestVLD= ttest_rel(Theano_VLD_pred_response[id].flatten(),TF_VLD_pred_response[id].flatten())
+    ttest_result_VLD.append(ttestVLD)
+    pval_VLD[ss-1]= ttestVLD.pvalue
+
 #scipy.stats.ttest_rel(a, b, axis=0, nan_policy='propagat
 #Want to test that the variation for one neuron different from other neuron
 #ttest_rel(response1,response2) --- 103 = stats per neuron 
@@ -330,48 +419,4 @@ dd=sms.DescrStatsW(diffall)
 sms.DescrStatsW.ttest_mean(dd,value=0, alternative='two-sided')
 #http://www.statsmodels.org/stable/generated/statsmodels.stats.weightstats.CompareMeans.html
 
-if(False):
-    R2_all_regions = {}
-    #for ss in seed_list:
-    #ss = np.argmax(R2_training)
-    ss = np.argmin(R2_training)
-    id = str(ss)
-    setname ='min TRAINING'
-    response1 =Theano_TR_pred_response[id]
-    response2 =TF_TR_pred_response[id]
-    r_sqr = TN_TF_Rsquare(response1, response2)
-    titletxt = "Seed=%g, Trial#%s: Predicted responses from %s set\nR^2 = %f"%(curr_seed, id,setname,r_sqr)
-    xlbl='Antolik''s implementation with Theano'
-    ylbl="Re-implementation with Tensorflow"
-
-    fig = plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl, RETURN=True)
-    R2_all_regions[id] = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(response1.T,response2.T)]
-    # plt.figure()
-    # plt.hist(R2_all_regions[id],50)
-    # plt.title(titletxt)
-
-    #ss = np.argmax(R2_VLD)
-    ss = np.argmin(R2_VLD)
-    id =str(ss)
-    setname ='min VALIDATION'
-    response1 =Theano_VLD_pred_response[id]
-    response2 =TF_VLD_pred_response[id]
-    r_sqr = TN_TF_Rsquare(response1, response2)
-    titletxt = "Seed=%g, Trial#%s: Predicted responses from %s set\nR^2 = %f"%(curr_seed, id,setname,r_sqr)
-    xlbl='Antolik''s implementation with Theano'
-    ylbl="Re-implementation with Tensorflow"
-    fig =plot_TN_TF_scatter_linear(response1, response2, titletxt=titletxt,xlbl=xlbl,ylbl=ylbl,RETURN=True)
-    R2_all_regions[id] = [TN_TF_Rsquare(this_TN, this_TF) for this_TN, this_TF in zip(response1.T,response2.T)]
-    # plt.figure()
-    # plt.hist(R2_all_regions[id],50)
-    # plt.title(titletxt)
-    plt.show()
-     
-    from scipy import stats
-    [statistic, pvalue] = stats.ttest_rel(response1, response2)
-
-
-########################################################################
-# Compute correlation coefficient
-########################################################################
-# 1. corr ---- mea
+"""
