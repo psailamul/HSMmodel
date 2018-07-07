@@ -17,7 +17,8 @@ from numpy.random import seed, rand
     
 # CUDA_VISIBLE_DEVICES=2 python tf_HSM_main_MaxFunc_100k_upgraded.py REGION=2 RESTART_TRIAL=0 SEED=13 ITERATIONS=1 LR=1e-3 NUM_LGN=9 HLSR=0.2
 # CUDA_VISIBLE_DEVICES=2 
-#python tf_HSM_main_Scipy_jac_np_multrials.py REGION=3 RESTART_TRIAL=5 SEED=13 ITERATIONS=1 LR=1e-3 NUM_LGN=9 HLSR=0.2 | tee Seed_LOG_reviewCode/HSM_Tensorflow_region3_seed13_trial5.txt
+#python tf_HSM_main_Scipy_jac_np_multrials.py REGION=3 RESTART_TRIAL=6 SEED=13 ITERATIONS=1 LR=1e-3 NUM_LGN=9 HLSR=0.2 | tee Seed_LOG_reviewCode/HSM_Tensorflow_region3_seed13_trial6.txt
+#python tf_HSM_main_Scipy_jac_np_multrials.py REGION=3 RESTART_TRIAL=1 SEED=13 ITERATIONS=1 LR=1e-3 NUM_LGN=9 HLSR=0.2 | tee Seed_LOG_reviewCode/HSM_Tensorflow_region3_seed13_gpuTrial1.txt
 def correlate_vectors(yhat_array, y_array):
   corrs = []      
   for yhat, y in zip(np.transpose(yhat_array), np.transpose(y_array)):

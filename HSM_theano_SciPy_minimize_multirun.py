@@ -12,7 +12,7 @@ import sys
 from visualization import *
 from funcs_for_graphs import *
 
-#python HSM_theano_SciPy_minimize_multirun.py REGION=1 RESTART_TRIAL=5 SEED=13 | tee Seed_LOG_reviewCode/HSM_Theano_region1_seed13_trial5.txt
+#python HSM_theano_SciPy_minimize_multirun.py REGION=3 RESTART_TRIAL=0 SEED=13 | tee Seed_LOG_reviewCode/HSM_Theano_region3_seed13_trial0.txt
 
 #python HSM_theano_SciPy_minimize_multirun.py REGION=3 RESTART_TRIAL=0 SEED=0
 def main():
