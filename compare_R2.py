@@ -342,7 +342,7 @@ FIG_HANDLES.append(fig); FIG_NAMES.append('C_TNTF_VLD_CDF')
 
 
 
-
+SAVEFIG=False
 
 if(SAVEFIG):
     for fignum in range(len(FIG_HANDLES)):

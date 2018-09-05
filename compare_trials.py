@@ -14,7 +14,7 @@ from HSM import HSM
 from funcs_for_graphs import *
 import glob
 import param
-
+from scipy import stats
 # # ############# Functions ###############
 def get_param_from_fname(fname, keyword):
     cuts = re.split('_',fname)
@@ -190,70 +190,71 @@ print "Download Data set complete: Time %s" %(time.time() - download_time)
 # Check seed=13 with different trials  (0 - 5, the order is arbitrary)
 ########################################################################
 ######   Check   Trials  
-region = '1'
-curr_seed = 13
-trial_list = [0,1,2,3,4]
-TN_across_trial ={}
-TF_across_trial ={}
-Ks_seed_across_trial ={}
-lgn=9; hlsr=0.2
-rg1_train_input = train_input['1']
-rg1_train_set = train_set['1']
-rg1_vldinput_set = vldinput_set['1']
-rg1_vld_set = vld_set['1']
-num_pres,num_neurons = np.shape(rg1_train_set)
+CK=False
+if(CK):
+    region = '1'
+    curr_seed = 13
+    trial_list = [0,1,2,3,4]
+    TN_across_trial ={}
+    TF_across_trial ={}
+    Ks_seed_across_trial ={}
+    lgn=9; hlsr=0.2
+    rg1_train_input = train_input['1']
+    rg1_train_set = train_set['1']
+    rg1_vldinput_set = vldinput_set['1']
+    rg1_vld_set = vld_set['1']
+    num_pres,num_neurons = np.shape(rg1_train_set)
 
-hsm = HSM(rg1_train_input,rg1_train_set) 
-hsm.num_lgn = lgn 
-hsm.hlsr = hlsr      
-for tr in trial_list:
-    #Theano
-    fname = TN_filename(curr_seed,tr) 
-    this_item = fname[:-4] #remove.npy   
-    tmpitem = np.load(os.path.join(data_dir,fname))
-    TN_across_trial[str(tr)] = tmpitem.item()
-    TN_across_trial[str(tr)]['hsm']=hsm
-    Ks_seed_across_trial[str(tr)]=TN_across_trial[str(tr)]['x']
-    #Tensorflow
-    TF_all_folders = glob.glob(os.path.join(data_dir, TF_filename(curr_seed,tr) +'*'))
-    this_item = TF_all_folders[0]    
-    tmpdat=load_TensorFlow_outputs('', data_dir, this_item,split_path=False)
-    TF_across_trial[str(tr)]  = tmpdat
-    
- 
-from scipy import stats
-  
-#Get responses
-Theano_TR_pred_response= {}
-Theano_VLD_pred_response={}
-TF_TR_pred_response={}
-TF_VLD_pred_response={}
-#Get corr
-TN_TR_corr=np.zeros([len(trial_list),num_neurons])
-TN_VLD_corr=np.zeros([len(trial_list),num_neurons])
-TF_TR_corr=np.zeros([len(trial_list),num_neurons])
-TF_VLD_corr=np.zeros([len(trial_list),num_neurons])
+    hsm = HSM(rg1_train_input,rg1_train_set) 
+    hsm.num_lgn = lgn 
+    hsm.hlsr = hlsr      
+    for tr in trial_list:
+        #Theano
+        fname = TN_filename(curr_seed,tr) 
+        this_item = fname[:-4] #remove.npy   
+        tmpitem = np.load(os.path.join(data_dir,fname))
+        TN_across_trial[str(tr)] = tmpitem.item()
+        TN_across_trial[str(tr)]['hsm']=hsm
+        Ks_seed_across_trial[str(tr)]=TN_across_trial[str(tr)]['x']
+        #Tensorflow
+        TF_all_folders = glob.glob(os.path.join(data_dir, TF_filename(curr_seed,tr) +'*'))
+        this_item = TF_all_folders[0]    
+        tmpdat=load_TensorFlow_outputs('', data_dir, this_item,split_path=False)
+        TF_across_trial[str(tr)]  = tmpdat
+        
+     
+      
+    #Get responses
+    Theano_TR_pred_response= {}
+    Theano_VLD_pred_response={}
+    TF_TR_pred_response={}
+    TF_VLD_pred_response={}
+    #Get corr
+    TN_TR_corr=np.zeros([len(trial_list),num_neurons])
+    TN_VLD_corr=np.zeros([len(trial_list),num_neurons])
+    TF_TR_corr=np.zeros([len(trial_list),num_neurons])
+    TF_VLD_corr=np.zeros([len(trial_list),num_neurons])
 
-hsm_tr = HSM(rg1_train_input,rg1_train_set)  
-hsm_tr.num_lgn = lgn 
-hsm_tr.hlsr = hlsr
-hsm_vld = HSM(rg1_vldinput_set,rg1_vld_set) 
-hsm_vld.num_lgn = lgn 
-hsm_vld.hlsr = hlsr
+    hsm_tr = HSM(rg1_train_input,rg1_train_set)  
+    hsm_tr.num_lgn = lgn 
+    hsm_tr.hlsr = hlsr
+    hsm_vld = HSM(rg1_vldinput_set,rg1_vld_set) 
+    hsm_vld.num_lgn = lgn 
+    hsm_vld.hlsr = hlsr
 
-for tr in trial_list:
-    #Theano
-    Theano_TR_pred_response[str(tr)] = HSM.response(hsm_tr,rg1_train_input,Ks_seed_across_trial[str(tr)]) # predicted response after train
-    Theano_VLD_pred_response[str(tr)] = HSM.response(hsm_vld,rg1_vldinput_set,Ks_seed_across_trial[str(tr)]) #predicted response for validation set
-    #TensorFlow
-    TF_TR_pred_response[str(tr)] = TF_across_trial[str(tr)]['TR_1st_pred_response'] # predicted response after train
-    TF_VLD_pred_response[str(tr)] = TF_across_trial[str(tr)]['VLD_1st_ypredict'] #predicted response for validation set
-    #Corr
-    TN_TR_corr[tr, :] = computeCorr(Theano_TR_pred_response[str(tr)],rg1_train_set)
-    TF_TR_corr[tr, :] = computeCorr(TF_TR_pred_response[str(tr)],rg1_train_set)
-    #VLD
-    TN_VLD_corr[tr, :] = computeCorr(Theano_VLD_pred_response[str(tr)],rg1_vld_set)
-    TF_VLD_corr[tr, :] = computeCorr(TF_VLD_pred_response[str(tr)],rg1_vld_set)
+    for tr in trial_list:
+        #Theano
+        Theano_TR_pred_response[str(tr)] = HSM.response(hsm_tr,rg1_train_input,Ks_seed_across_trial[str(tr)]) # predicted response after train
+        Theano_VLD_pred_response[str(tr)] = HSM.response(hsm_vld,rg1_vldinput_set,Ks_seed_across_trial[str(tr)]) #predicted response for validation set
+        #TensorFlow
+        TF_TR_pred_response[str(tr)] = TF_across_trial[str(tr)]['TR_1st_pred_response'] # predicted response after train
+        TF_VLD_pred_response[str(tr)] = TF_across_trial[str(tr)]['VLD_1st_ypredict'] #predicted response for validation set
+        #Corr
+        TN_TR_corr[tr, :] = computeCorr(Theano_TR_pred_response[str(tr)],rg1_train_set)
+        TF_TR_corr[tr, :] = computeCorr(TF_TR_pred_response[str(tr)],rg1_train_set)
+        #VLD
+        TN_VLD_corr[tr, :] = computeCorr(Theano_VLD_pred_response[str(tr)],rg1_vld_set)
+        TF_VLD_corr[tr, :] = computeCorr(TF_VLD_pred_response[str(tr)],rg1_vld_set)
 
 R2 = False
 if (R2):
