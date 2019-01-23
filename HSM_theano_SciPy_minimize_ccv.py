@@ -17,6 +17,7 @@ from visualization import *
 from funcs_for_graphs import *
 
 #python HSM_theano_SciPy_minimize_multirun.py REGION=1 RESTART_TRIAL=0 SEED=13 | tee Seed_LOG/HSM_Theano_region1_seed13_trial0.txt
+#python HSM_theano_SciPy_minimize_multirun.py REGION=1 RESTART_TRIAL=0 SEED=43 | tee Seed_LOG/HSM_Theano_region1_seed43_trial0.txt
 def saveplot_act_of_max_min_corr(yhat,train_set,corr,save_dir,fname, setname='TR',report_txt=''):
     imax = np.argmax(corr) # note : actually have to combine neurons in all regions
     plt.figure()

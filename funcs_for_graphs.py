@@ -129,13 +129,17 @@ def compare_corr_all_regions(pred_response,vld_set, corr_set, stats_param='max',
         stat1 = np.min(corr1); stat2 = np.min(corr2); stat3 = np.min(corr3); 
     elif stats_param.lower() == 'median' :
         N1=len(corr1); N2=len(corr2); N3=len(corr3);
-        idx1 = N1/2-1 if N1%2==0 else (N1-1)/2
-        idx2 = N2/2-1 if N2%2==0 else (N2-1)/2
-        idx3 = N3/2-1 if N3%2==0 else (N3-1)/2
+        medidx1 = N1/2-1 if N1%2==0 else (N1-1)/2
+        medidx2 = N2/2-1 if N2%2==0 else (N2-1)/2
+        medidx3 = N3/2-1 if N3%2==0 else (N3-1)/2
         
-        stat1=np.sort(corr1)[idx1]
-        stat2=np.sort(corr2)[idx2]
-        stat3=np.sort(corr3)[idx3]
+        idx1 = np.argsort(corr1)[medidx1]
+        idx2 = np.argsort(corr2)[medidx2]
+        idx3 = np.argsort(corr3)[medidx3]
+
+        stat1=corr1[idx1]
+        stat2=corr2[idx2]
+        stat3=corr3[idx3]
     else:
         print "Parameter not Found "
     combine_corr = np.concatenate((corr1, corr2,corr3),axis=0)
@@ -206,8 +210,9 @@ def plot_corr_response_scatter(pred_response, vld_set, corr_set, stats_param='ma
         stat1 = np.min(corr_set); 
     elif stats_param.lower() == 'median' or stats_param.lower() == 'med':
         N1=len(corr_set);
-        idx1 = N1/2-1 if N1%2==0 else (N1-1)/2
-        stat1=np.sort(corr_set)[idx1]
+        medidx1 = N1/2-1 if N1%2==0 else (N1-1)/2
+        idx1 = np.argsort(corr_set)[medidx1]
+        stat1=corr_set[idx1]
     else:
         print "Parameter not Found "
 
@@ -259,8 +264,9 @@ def plot_fig4_response_scatter( model_activity,
         nr_text ='worst'
     elif stats_param.lower() == 'median' or stats_param.lower() == 'med':
         N1=len(corr_set);
-        idx1 = N1/2-1 if N1%2==0 else (N1-1)/2
-        stat1=np.sort(corr_set)[idx1]
+        medidx1 = N1/2-1 if N1%2==0 else (N1-1)/2
+        idx1 = np.argsort(corr_set)[medidx1]
+        stat1=corr_set[idx1]     
         nr_text ='median'
     else:
         print "Parameter not Found "
@@ -415,7 +421,7 @@ def load_TensorFlow_outputs(current_path, data_dir, dir_item,split_path = True):
       return TF_DAT
     return None
 
-def build_hsm_for_Theano(REGION_NUM=3, seed=13, lgn=9, hlsr=0.2): # May not need
+def build_hsm_for_Theano(REGION_NUM=3, seed=13, lgn=9, hlsr=0.2): 
     rg =1
     from HSM import HSM
     import param
@@ -436,3 +442,10 @@ def build_hsm_for_Theano(REGION_NUM=3, seed=13, lgn=9, hlsr=0.2): # May not need
         ALL_HSM[Region_num]=hsm
         rg+=1
     return ALL_HSM
+    
+def combine_corrs(corrs):
+    return np.concatenate((corrs['1'], corrs['2'],corrs['3']),axis=0)
+
+def combine_responses(response):
+    return np.concatenate((response['1'], response['2'],response['3']),axis=1) 
+    

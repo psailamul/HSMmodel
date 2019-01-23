@@ -20,7 +20,7 @@ def main():
     # Simulation Config
     ########################################################################
     PLOT_CORR_STATS = False
-    REGION =1; RESTART_TRIAL=4; SEED =13; ITERATIONS=1; LR = 1e-3; NUM_LGN=9; HLSR=0.2;
+    REGION =2; RESTART_TRIAL=4; SEED =13; ITERATIONS=1; LR = 1e-3; NUM_LGN=9; HLSR=0.2;
     MAXITER = 100000
     if len(sys.argv) > 1:
         for ii in range(1,len(sys.argv)):

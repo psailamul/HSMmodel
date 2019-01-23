@@ -90,7 +90,7 @@ this_ss =all_seeds[0]
 this_tr =all_trials[0]
 
 for rg in all_regions:
-    import ipdb; ipdb.set_trace()
+    #import ipdb; ipdb.set_trace()
     tmpdat =None; tmpitem=None;
     this_rg = str(rg)
     key = str(rg)
@@ -130,6 +130,8 @@ TN_corr={};
 TN_vld_corr={}
 TF_corr={}; 
 TF_vld_corr={}
+combined_TNvld_corr =[]
+combined_TFvld_corr =[]
 
 for i in range(NUM_REGIONS):
     key=str(i+1)
@@ -137,23 +139,42 @@ for i in range(NUM_REGIONS):
     TN_vld_corr[key]=computeCorr(TN_VLD_pred_response[key],vld_set[key])
     TF_corr[key] = computeCorr(TF_TR_pred_response[key],train_set[key])
     TF_vld_corr[key]=computeCorr(TF_VLD_pred_response[key],vld_set[key])
+    TNvld = TN_vld_corr[key]; combined_TNvld_corr.append(TNvld)
+    TFvld = TF_vld_corr[key]; combined_TFvld_corr.append(TFvld)
+    print("[Theano] Region%s: mean=%g, max=%g, median=%g, min=%g"%(key,np.mean(TNvld),np.max(TNvld), np.median(TNvld), np.min(TNvld)))
+    print("[TensorFlow] Region%s: mean=%g, max=%g, median=%g, min=%g"%(key,np.mean(TFvld),np.max(TFvld), np.median(TFvld), np.min(TFvld)))
+    print("-----------------------------------------------")
+combined_TNvld_corr = np.concatenate(combined_TNvld_corr)
+combined_TFvld_corr = np.concatenate(combined_TFvld_corr)
+print("-----------------------------------------------")
+print("\t COMBINE ALL 3 REGIONS")
+print("-----------------------------------------------")
+print("Theano")
+print("\t mean=%g \n\t max=%g \n\t median=%g \n\t min=%g"%(np.mean(combined_TNvld_corr),
+                                                            np.max(combined_TNvld_corr), 
+                                                            np.median(combined_TNvld_corr), 
+                                                            np.min(combined_TNvld_corr)))
+print("-----------------------------------------------")
+print("TensorFlow")
+print("\t mean=%g \n\t max=%g \n\t median=%g \n\t min=%g"%(np.mean(combined_TFvld_corr),
+                                                            np.max(combined_TFvld_corr), 
+                                                            np.median(combined_TFvld_corr), 
+                                                            np.min(combined_TFvld_corr)))
+print("-----------------------------------------------")
 
-#combine response from all region
-for rg in all_regions:
-    #Theano
-    fname = TN_filename(this_ss,this_rg)
-    this_item = fname[:-4] #remove.npy
-    check_file = glob.glob(os.path.join(data_dir,fname))
-    if check_file is None:
-        print "Error: File not found\t Theano seed = %g"%(ss)
-        print this_item
-    TF_all_folders = glob.glob(os.path.join(data_dir, TF_filename(this_ss,this_tr,this_rg) +'*'))
-    for this_item in TF_all_folders: 
-        print "\t\t this item: ",this_item
-        tmpdat=load_TensorFlow_outputs('', data_dir, this_item,split_path=False)
-        if tmpdat is not None:
-            break
-    if tmpdat is None:
-        print "Error: File not found\t Tensorflow seed = %g"%(ss)
-        print TF_all_folders
+SAVE = False
+if SAVE:
+    three_regions_seed13 = {
+    'TN_corr':TN_corr,
+    'TN_vld_corr':TN_vld_corr,
+    'TF_corr':TF_corr,
+    'TF_vld_corr':TF_vld_corr,
+    'combined_TNvld_corr':combined_TNvld_corr,
+    'combined_TFvld_corr':combined_TFvld_corr
+    }
+    import cPickle as pickle
+    output = open("three_regions_seed13.pkl", 'wb')
+    pickle.dump(three_regions_seed13, output)
+    output.close()
+       
 

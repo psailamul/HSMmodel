@@ -123,7 +123,7 @@ def combine_responses(response):
     return np.concatenate((response['1'], response['2'],response['3']),axis=1) 
     
 # ############# Setting ###############
-SAVEFIG=True
+SAVEFIG=False
 SEED=13
 FIG_HANDLES=[]
 FIG_NAMES=[]
@@ -246,7 +246,7 @@ FIG_HANDLES.append(fig); FIG_NAMES.append('Z0_TNTF_TR_fig_max')
 fig=compare_corr_all_regions(Theano_VLD_pred_response,TF_VLD_pred_response, TNTF_vld_corr, stats_param='max', titletxt='Theano&TensorFlow :: Validation Set', RETURN=True)
 FIG_HANDLES.append(fig); FIG_NAMES.append('Z0_TNTF_VLD_fig_max')
 
- # #################################################
+# #################################################
 # Plot in Figure 4
 # #################################################
 
